@@ -245,36 +245,49 @@ def handle_download():
     url = data.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
     
-    status, result = download_video(url)
+    # Generate Job ID and start background thread
+    job_id = str(uuid.uuid4())
+    job_status[job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
     
-    if status == "SUCCESS":
-        # Apply reward
-        update_user_stats(user['uid'], 1, REWARD_PER_DOWNLOAD, user['is_guest'])
-        
-        raw_thumb = result.get('thumbnail', '')
-        proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
-        
-        return jsonify({
-            'success': True, 
-            'status': 'ready', 
-            'filename': result['filename'],
-            'title': result['title'],
-            'thumbnail': proxy_thumb,
-            'remaining': DAILY_LIMIT - (user_data['count'] + 1),
-            'balance': round(user_data['balance'] + REWARD_PER_DOWNLOAD, 2)
-        })
-    elif status == "PENDING_GITHUB":
-        update_user_stats(user['uid'], 1, REWARD_PER_DOWNLOAD, user['is_guest'])
-        return jsonify({
-            'success': True, 
-            'status': 'pending', 
-            'job_id': result, 
-            'remaining': DAILY_LIMIT - (user_data['count'] + 1),
-            'balance': round(user_data['balance'] + REWARD_PER_DOWNLOAD, 2),
-            'message': 'Hugging Face is blocked. Switching to GitHub Backup...' 
-        })
-    else:
-        return jsonify({'success': False, 'message': result})
+    # Reward for starting a job
+    update_user_stats(user['uid'], 1, REWARD_PER_DOWNLOAD, user['is_guest'])
+
+    def run_download_task(target_url, j_id):
+        status, result = download_video(target_url)
+        if status == "SUCCESS":
+            raw_thumb = result.get('thumbnail', '')
+            # Try to build proxy URL if request context is available
+            try:
+                proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
+            except:
+                proxy_thumb = raw_thumb
+            
+            job_status[j_id] = {
+                'status': 'ready',
+                'filename': result['filename'],
+                'title': result['title'],
+                'thumbnail': proxy_thumb
+            }
+        elif status == "PENDING_GITHUB":
+            job_status[j_id]['status'] = 'pending'
+            job_status[j_id]['message'] = 'Hugging Face is blocked. Switching to GitHub Backup...'
+        else:
+            job_status[j_id] = {'status': 'failed', 'message': result}
+            
+    # Start thread
+    import threading
+    thread = threading.Thread(target=run_download_task, args=(url, job_id))
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({
+        'success': True, 
+        'status': 'pending',
+        'job_id': job_id,
+        'remaining': DAILY_LIMIT - (user_data['count'] + 1),
+        'balance': round(user_data['balance'] + REWARD_PER_DOWNLOAD, 2),
+        'message': 'Job Created. Pending...'
+    })
 
 @app.route('/check-limit', methods=['POST'])
 def check_limit():
