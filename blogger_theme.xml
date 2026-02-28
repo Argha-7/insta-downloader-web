@@ -879,7 +879,7 @@
                                 thumbnail: currentMetadata.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"
                             });
                         } else {
-                            statusText.innerText = `GitHub Processing... (${count * 5}s)`;
+                            statusText.innerText = `Video Processing... (${count * 5}s)`;
                             progressBar.style.width = `${50 + (count * 0.7)}%`;
                         }
                     } catch (e) {}
