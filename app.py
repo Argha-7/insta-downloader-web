@@ -151,12 +151,15 @@ def handle_download():
     
     if status == "SUCCESS":
         user_usage[ip] = usage + 1
+        raw_thumb = result.get('thumbnail', '')
+        proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
+        
         return jsonify({
             'success': True, 
             'status': 'ready', 
             'filename': result['filename'],
             'title': result['title'],
-            'thumbnail': result['thumbnail'],
+            'thumbnail': proxy_thumb,
             'remaining': limit - (usage + 1)
         })
     elif status == "PENDING_GITHUB":
@@ -180,6 +183,19 @@ def check_limit():
     usage = user_usage.get(ip, 0)
     return jsonify({'usage': usage, 'limit': limit, 'remaining': max(0, limit - usage)})
 
+@app.route('/proxy-img')
+def proxy_image():
+    """Proxies images to bypass CORS."""
+    url = request.args.get('url')
+    if not url: return "No URL", 400
+    try:
+        resp = requests.get(url, stream=True, timeout=10, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        })
+        return (resp.content, resp.status_code, resp.headers.items())
+    except Exception as e:
+        return str(e), 500
+
 @app.route('/preview', methods=['POST'])
 def get_preview():
     """Fetches metadata (title/thumbnail) without downloading."""
@@ -200,10 +216,14 @@ def get_preview():
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
+            raw_thumb = info.get('thumbnail', '')
+            # Use our proxy for the thumbnail
+            proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
+            
             return jsonify({
                 'success': True,
                 'title': info.get('title', 'Instagram Video'),
-                'thumbnail': info.get('thumbnail', '')
+                'thumbnail': proxy_thumb
             })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 403
