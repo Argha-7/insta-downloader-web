@@ -109,7 +109,11 @@ def download_video(url):
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
             if os.path.exists(filename):
-                return "SUCCESS", os.path.basename(filename)
+                return "SUCCESS", {
+                    'filename': os.path.basename(filename),
+                    'title': info.get('title', 'Instagram Video'),
+                    'thumbnail': info.get('thumbnail', '')
+                }
     except Exception as e:
         err_str = str(e)
         print(f"LOCAL DOWNLOAD FAILED: {err_str}")
@@ -147,10 +151,24 @@ def handle_download():
     
     if status == "SUCCESS":
         user_usage[ip] = usage + 1
-        return jsonify({'success': True, 'status': 'ready', 'filename': result, 'remaining': limit - (usage + 1)})
+        return jsonify({
+            'success': True, 
+            'status': 'ready', 
+            'filename': result['filename'],
+            'title': result['title'],
+            'thumbnail': result['thumbnail'],
+            'remaining': limit - (usage + 1)
+        })
     elif status == "PENDING_GITHUB":
         user_usage[ip] = usage + 1
-        return jsonify({'success': True, 'status': 'pending', 'job_id': result, 'remaining': limit - (usage + 1), 'message': 'Hugging Face is blocked. Switching to GitHub Backup...' })
+        # GitHub action update: we won't have metadata immediately
+        return jsonify({
+            'success': True, 
+            'status': 'pending', 
+            'job_id': result, 
+            'remaining': limit - (usage + 1), 
+            'message': 'Hugging Face is blocked. Switching to GitHub Backup...' 
+        })
     else:
         return jsonify({'success': False, 'message': result})
 

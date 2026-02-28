@@ -261,11 +261,85 @@
             #progressBar { width: 20%; height: 100%; background: var(--grad); transition: 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); }
             #statusText { font-weight: 600; font-size: 1rem; color: var(--primary); }
 
-            /* Result Card */
+            /* Result Card Redesign */
             #result {
                 display: none;
                 margin-top: 50px;
-                animation: float 3s ease-in-out infinite;
+                max-width: 650px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .result-card {
+                background: white;
+                border-radius: 12px;
+                padding: 25px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+                display: flex;
+                gap: 25px;
+                text-align: left;
+                align-items: center;
+                border: 1px solid #f1f5f9;
+                margin-bottom: 20px;
+            }
+
+            .res-thumb {
+                width: 140px;
+                height: 140px;
+                border-radius: 8px;
+                object-fit: cover;
+                background: #f1f5f9;
+            }
+
+            .res-info { flex: 1; }
+            .res-title { font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 5px; text-transform: uppercase; }
+            .res-meta { font-size: 0.9rem; color: #64748b; margin-bottom: 15px; }
+
+            .btn-download-final {
+                background: #10b981;
+                color: white;
+                text-decoration: none;
+                padding: 12px 25px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                font-weight: 600;
+                width: 100%;
+                margin-bottom: 12px;
+                transition: 0.3s;
+            }
+            .btn-download-final:hover { background: #059669; }
+
+            .btn-copy-link {
+                background: white;
+                color: #6366f1;
+                border: 2px solid #6366f1;
+                padding: 10px;
+                border-radius: 8px;
+                width: 100%;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                cursor: pointer;
+                transition: 0.3s;
+            }
+            .btn-copy-link:hover { background: #f5f3ff; }
+
+            .success-banner {
+                background: #d1fae5;
+                color: #065f46;
+                padding: 15px;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                font-weight: 500;
             }
 
             /* Features Section */
@@ -442,10 +516,23 @@
             </div>
 
             <div id='result'>
-                <a class='btn-started' id='downloadLink' style='font-size: 1.3rem; padding: 20px 60px;' target='_blank'>
-                    <i class='fas fa-circle-check'></i> Download Video
-                </a>
-                <p style="margin-top: 20px; color: #64748b;">Downloaded successfully! ✅</p>
+                <div class='result-card'>
+                    <img class='res-thumb' id='resThumb' src=''/>
+                    <div class='res-info'>
+                        <div class='res-title' id='resTitle'>Video Title</div>
+                        <div class='res-meta' id='resMeta'>Ready for download</div>
+                        <a class='btn-download-final' id='downloadLink' target='_blank'>
+                            <i class='fas fa-download'></i> Download Video
+                        </a>
+                        <button class='btn-copy-link' onclick='copyLink()'>
+                            <i class='far fa-clone'></i> Copy Link
+                        </button>
+                    </div>
+                </div>
+
+                <div class='success-banner'>
+                    <i class='fas fa-check-circle'></i> Conversion completed successfully! Use the download button above.
+                </div>
 
                 <div style="margin-top: 30px; padding: 20px; background: rgba(37, 211, 102, 0.1); border-radius: 20px; border: 1px dashed #25d366;">
                     <p style="color:#065f46; font-weight:700; margin-bottom:10px;">Help your friends too! 😍</p>
@@ -677,7 +764,7 @@
 
                     if (data.success) {
                         if (data.status === 'ready') {
-                            showSuccess(data.filename);
+                            showSuccess(data);
                         } else if (data.status === 'pending') {
                             statusText.innerText = 'Server blocked. Activating Smart Backup...';
                             progressBar.style.width = '50%';
@@ -706,7 +793,11 @@
 
                         if (data.status === 'ready') {
                             clearInterval(interval);
-                            showSuccess(data.filename);
+                            showSuccess({
+                                filename: data.filename,
+                                title: "Instagram Video",
+                                thumbnail: "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"
+                            });
                         } else {
                             statusText.innerText = `GitHub Processing... (${count * 5}s)`;
                             progressBar.style.width = `${50 + (count * 0.7)}%`;
@@ -715,12 +806,23 @@
                 }, 5000);
             }
 
-            function showSuccess(filename) {
+            function showSuccess(data) {
                 document.getElementById('progressUI').style.display = 'none';
                 const res = document.getElementById('result');
                 res.style.display = 'block';
-                document.getElementById('downloadLink').href = `${API_BASE}/files/${filename}`;
+                
+                document.getElementById('resTitle').innerText = data.title || "Instagram Video";
+                document.getElementById('resThumb').src = data.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png";
+                document.getElementById('downloadLink').href = `${API_BASE}/files/${data.filename}`;
+                
                 resetBtn();
+            }
+
+            function copyLink() {
+                const url = document.getElementById('urlInput').value;
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('Link copied to clipboard!');
+                });
             }
 
             function showError(msg) {
