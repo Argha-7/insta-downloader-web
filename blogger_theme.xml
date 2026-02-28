@@ -161,6 +161,54 @@
 
             .btn-action:hover { background: var(--primary); }
 
+            /* Pricing Section */
+            .pricing {
+                padding: 100px 10%;
+                text-align: center;
+                background: var(--light);
+            }
+
+            .pricing-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 30px;
+                margin-top: 50px;
+            }
+
+            .p-card {
+                background: var(--white);
+                padding: 40px;
+                border-radius: 24px;
+                border: 1px solid #e2e8f0;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .p-card.popular {
+                border: 2px solid var(--primary);
+                transform: scale(1.05);
+                box-shadow: var(--shadow);
+            }
+
+            .p-card h4 { font-size: 1.2rem; margin-bottom: 10px; color: var(--primary); }
+            .p-card .price { font-size: 2.5rem; font-weight: 800; margin-bottom: 20px; }
+            .p-card .price span { font-size: 1rem; color: #64748b; }
+            .p-card ul { list-style: none; padding: 0; margin: 30px 0; text-align: left; }
+            .p-card ul li { margin-bottom: 12px; color: #64748b; display: flex; align-items: center; gap: 10px; }
+            .p-card ul li i { color: #22c55e; }
+
+            .btn-outline {
+                display: block;
+                padding: 12px;
+                border: 2px solid var(--primary);
+                color: var(--primary);
+                text-decoration: none;
+                border-radius: 50px;
+                font-weight: 600;
+            }
+
+            .btn-outline:hover { background: var(--primary); color: white; }
+
             /* Progress UI */
             .progress-card {
                 max-width: 600px;
