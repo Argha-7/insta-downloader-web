@@ -112,17 +112,27 @@ def get_user_data(token_id=None, ip=None):
 def update_user_stats(uid, delta_count, delta_balance, is_guest):
     """Update user stats in Firestore or memory."""
     if not is_guest and FIREBASE_ENABLED:
-        user_ref = db.collection('users').document(uid)
-        user_ref.update({
-            'count': firestore.Increment(delta_count),
-            'balance': firestore.Increment(delta_balance),
-            'last_activity': firestore.SERVER_TIMESTAMP
-        })
-    else:
-        # Update Guest in memory
-        if uid in user_usage:
+        try:
+            user_ref = db.collection('users').document(uid)
+            user_ref.update({
+                'count': firestore.Increment(delta_count),
+                'balance': firestore.Increment(delta_balance),
+                'last_activity': firestore.SERVER_TIMESTAMP
+            })
+        except Exception as e:
+            print(f"FIREBASE DB ERROR: {e}")
+            # Fallback to memory if DB write fails
+            if uid not in user_usage:
+                user_usage[uid] = {'count': 0, 'balance': 0.0, 'last_reset': time.time()}
             user_usage[uid]['count'] += delta_count
             user_usage[uid]['balance'] += delta_balance
+    else:
+        # Update in memory
+        if uid not in user_usage:
+            user_usage[uid] = {'count': 0, 'balance': 0.0, 'last_reset': time.time()}
+        
+        user_usage[uid]['count'] += delta_count
+        user_usage[uid]['balance'] += delta_balance
 job_status = {}
 
 # Cleanup task to delete files older than 20 minutes
@@ -145,8 +155,8 @@ def trigger_github_action(video_url, job_id):
     repo = os.environ.get('GH_REPO') # e.g., "Argha-7/insta-downloader-web"
     
     if not token or not repo:
-        print("GITHUB ERROR: GH_TOKEN or GH_REPO not set in Secrets.")
-        return False
+        print("GITHUB ERROR: GH_TOKEN or GH_REPO not set. Skipping trigger (Local Testing).")
+        return "MISSING_TOKEN"
 
     url = f"https://api.github.com/repos/{repo}/actions/workflows/download.yml/dispatches"
     headers = {
@@ -203,21 +213,28 @@ def download_video(url, current_job_id=None):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             print(f"Starting local download for {url}...")
             info = ydl.extract_info(url, download=True)
-            return "SUCCESS", {
-                    'filename': os.path.basename(info['requested_downloads'][0]['filepath']),
-                    'title': info.get('title', 'Instagram Video'),
-                    'thumbnail': info.get('thumbnail', '')
-                }
+            filename = ydl.prepare_filename(info)
+            if os.path.exists(filename):
+                return "SUCCESS", {
+                        'filename': os.path.basename(filename),
+                        'title': info.get('title', 'Instagram Video'),
+                        'thumbnail': info.get('thumbnail', '')
+                    }
     except Exception as e:
+        import re
         err_str = str(e)
+        clean_err = re.sub(r'\x1b\[.*?m', '', err_str).lower()
         print(f"LOCAL DOWNLOAD FAILED: {err_str}")
         
         # 2. Trigger GitHub Actions if blocked
-        if "403" in err_str or "Forbidden" in err_str or "address associated" in err_str:
+        if "403" in clean_err or "forbidden" in clean_err or "address associated" in clean_err or "blocked" in clean_err or "empty media" in clean_err or "api is not granting access" in clean_err or "not available" in clean_err:
             if not current_job_id: current_job_id = str(uuid.uuid4())
             job_status[current_job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
-            if trigger_github_action(url, current_job_id):
+            trigger_result = trigger_github_action(url, current_job_id)
+            if trigger_result == True:
                 return "PENDING_GITHUB", current_job_id
+            elif trigger_result == "MISSING_TOKEN":
+                return "PENDING_GITHUB_LOCAL", current_job_id
         
         return "FAILED", f"Error: {err_str[:100]}"
 
@@ -268,9 +285,14 @@ def handle_download():
                 'title': result['title'],
                 'thumbnail': proxy_thumb
             }
-        elif status == "PENDING_GITHUB":
-            job_status[j_id]['status'] = 'pending'
-            job_status[j_id]['message'] = 'Hugging Face is blocked. Switching to GitHub Backup...'
+        elif status == "PENDING_GITHUB" or status == "PENDING_GITHUB_LOCAL":
+            job_status[result]['status'] = 'pending'
+            
+            msg = 'Hugging Face is blocked. Switching to GitHub Backup...'
+            if status == "PENDING_GITHUB_LOCAL":
+                msg = 'Local Testing: GitHub Trigger skipped due to missing tokens. Simulating pending state...'
+                
+            job_status[result]['message'] = msg
         else:
             job_status[j_id] = {'status': 'failed', 'message': result}
             
