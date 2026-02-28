@@ -253,11 +253,64 @@
             .f-card h3 { font-size: 1.5rem; margin-bottom: 15px; }
             .f-card p { color: #64748b; line-height: 1.7; }
 
-            /* Footer */
-            footer { padding: 60px 10%; text-align: center; border-top: 1px solid #e2e8f0; }
-            .social-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
-            .social-links a { width: 45px; height: 45px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--dark); text-decoration: none; }
-            .social-links a:hover { background: var(--primary); color: white; }
+            /* Footer Upgrade */
+            footer {
+                padding: 80px 10% 40px;
+                background: #0f172a;
+                color: #e2e8f0;
+                text-align: left;
+                margin-top: 50px;
+            }
+
+            .footer-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 50px;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                padding-bottom: 60px;
+                margin-bottom: 40px;
+            }
+
+            .footer-col h4 {
+                color: white;
+                font-size: 1.1rem;
+                margin-bottom: 25px;
+                font-weight: 700;
+            }
+
+            .footer-col ul { list-style: none; padding: 0; margin: 0; }
+            .footer-col ul li { margin-bottom: 15px; }
+            .footer-col ul li a {
+                color: #94a3b8;
+                text-decoration: none;
+                font-size: 0.95rem;
+                transition: 0.3s;
+            }
+            .footer-col ul li a:hover { color: var(--primary); padding-left: 5px; }
+
+            .social-links { display: flex; gap: 15px; margin-top: 20px; }
+            .social-links a {
+                width: 40px;
+                height: 40px;
+                background: rgba(255,255,255,0.05);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                text-decoration: none;
+            }
+            .social-links a:hover { background: var(--primary); transform: translateY(-3px); }
+
+            .footer-bottom {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 20px;
+                font-size: 0.9rem;
+                color: #64748b;
+            }
 
             @media (max-width: 768px) {
                 .navbar { padding: 1rem 5%; }
@@ -402,21 +455,91 @@
         </div>
 
         <footer>
-            <div class="social-links">
-                <a href="#">
-                    <i class="fab fa-facebook-f"></i>
-                </a>
-                <a href="#">
-                    <i class="fab fa-twitter"></i>
-                </a>
-                <a href="#">
-                    <i class="fab fa-instagram"></i>
-                </a>
-                <a href="#">
-                    <i class="fab fa-linkedin-in"></i>
-                </a>
+            <div class='footer-grid'>
+                <div class='footer-col'>
+                    <a class='logo' href='/' style='color:white; margin-bottom:20px; display:inline-block; font-size:1.4rem;'>
+                        <i class="fab fa-instagram"></i> InstaStream
+                    </a>
+                    <p style='color: #94a3b8; font-size: 0.9rem; line-height: 1.6;'>The world's most intelligent Instagram video downloader. Fast, free, and secure solution for everyone.</p>
+                    <div class="social-links">
+                        <a href="#">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class='footer-col'>
+                    <h4>Product</h4>
+                    <ul>
+                        <li>
+                            <a href="#">Reels Downloader</a>
+                        </li>
+                        <li>
+                            <a href="#">Video Downloader</a>
+                        </li>
+                        <li>
+                            <a href="#">Photo Downloader</a>
+                        </li>
+                        <li>
+                            <a href="#">MP3 Converter</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class='footer-col'>
+                    <h4>Support</h4>
+                    <ul>
+                        <li>
+                            <a href="#pricing">Pricing</a>
+                        </li>
+                        <li>
+                            <a href="#">Help Center</a>
+                        </li>
+                        <li>
+                            <a href="#">Contact Us</a>
+                        </li>
+                        <li>
+                            <a href="#">Buy a Coffee</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class='footer-col'>
+                    <h4>Legal</h4>
+                    <ul>
+                        <li>
+                            <a href="#">Privacy Policy</a>
+                        </li>
+                        <li>
+                            <a href="#">Terms of Service</a>
+                        </li>
+                        <li>
+                            <a href="#">Cookie Policy</a>
+                        </li>
+                        <li>
+                            <a href="#">DMCA Notice</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <p>&copy; 2024 InstaStream Pro. All Rights Reserved.</p>
+
+            <div class='footer-bottom'>
+                <p>&copy; 2024 InstaStream Pro AI. Built for the community.</p>
+                <div style="display:flex; gap:20px;">
+                    <a href="#" style="color:#64748b; text-decoration:none;">Privacy</a>
+                    <a href="#" style="color:#64748b; text-decoration:none;">Terms</a>
+                    <a href="#" style="color:#64748b; text-decoration:none;">Cookies</a>
+                </div>
+            </div>
         </footer>
 
         <script>
