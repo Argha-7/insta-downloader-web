@@ -148,6 +148,41 @@
                 background: transparent;
             }
 
+            .limit-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 15px;
+                background: rgba(99, 102, 241, 0.1);
+                color: var(--primary);
+                border-radius: 50px;
+                font-size: 0.85rem;
+                font-weight: 700;
+                margin-bottom: 20px;
+                border: 1px solid rgba(99, 102, 241, 0.2);
+            }
+
+            .modal {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.6);
+                z-index: 9999;
+                backdrop-filter: blur(5px);
+                align-items: center;
+                justify-content: center;
+            }
+
+            .modal-content {
+                background: white;
+                padding: 40px;
+                border-radius: 24px;
+                max-width: 400px;
+                width: 90%;
+                text-align: center;
+                animation: fadeIn 0.3s ease;
+            }
+
             .btn-action {
                 background: var(--dark);
                 color: white;
@@ -344,6 +379,11 @@
  Without Limits.</h1>
             <p class='animate delay-2'>The fastest, safest, and most intelligent Instagram downloader. Free forever, no watermark, works on any device.</p>
 
+            <div class='limit-badge animate delay-2' id='limitBadge'>
+                <i class="fas fa-chart-line"></i>
+                <span id='limitText'>Loading limits...</span>
+            </div>
+
             <div class='search-card animate' style='animation-delay: 0.6s;'>
                 <input id='urlInput' placeholder='Paste Instagram URL here...' type='text'/>
                 <button class='btn-action' id='downloadBtn' onclick='startDownload()'>
@@ -402,7 +442,7 @@
                     </div>
                     <ul>
                         <li>
-                            <i class="fas fa-check"></i> Unlimited Downloads</li>
+                            <i class="fas fa-check"></i> 10 Daily Downloads</li>
                         <li>
                             <i class="fas fa-check"></i> HD Quality Video</li>
                         <li>
@@ -414,40 +454,53 @@
                 </div>
 
                 <div class='p-card popular'>
-                    <div style="background:var(--primary); color:white; font-size:0.7rem; padding:5px 15px; position:absolute; top:20px; right:-30px; transform:rotate(45deg); width:120px;">MOST POPULAR</div>
-                    <h4>Support Tier</h4>
-                    <div class='price'>$2 <span>/coffee</span>
+                    <div style="background:var(--primary); color:white; font-size:0.7rem; padding:5px 15px; position:absolute; top:20px; right:-30px; transform:rotate(45deg); width:120px;">FULL LICENSE</div>
+                    <h4>Theme License</h4>
+                    <div class='price'>$29 <span>/lifetime</span>
                     </div>
                     <ul>
                         <li>
-                            <i class="fas fa-check"></i> Fast Callback API</li>
+                            <i class="fas fa-check"></i> Own this Blogger Theme</li>
                         <li>
-                            <i class="fas fa-check"></i> No Commercial Ads</li>
+                            <i class="fas fa-check"></i> 1 Year Script Updates</li>
                         <li>
-                            <i class="fas fa-check"></i> Early Feature Access</li>
+                            <i class="fas fa-check"></i> Setup Documentation</li>
                         <li>
-                            <i class="fas fa-check"></i> Priority Support</li>
+                            <i class="fas fa-check"></i> Removal of Credits</li>
                     </ul>
-                    <a href="#" class="btn-started" style="display:block;">Buy a Coffee ☕</a>
+                    <a href="#" class="btn-started" style="display:block;">Buy Theme Now</a>
                 </div>
 
                 <div class='p-card'>
-                    <h4>Enterprise</h4>
-                    <div class='price'>Custom</div>
+                    <h4>Pro Script</h4>
+                    <div class='price'>$10 <span>/year</span>
+                    </div>
                     <ul>
                         <li>
-                            <i class="fas fa-check"></i> API Integration</li>
+                            <i class="fas fa-check"></i> Private API Access</li>
                         <li>
-                            <i class="fas fa-check"></i> Dedicated Instances</li>
+                            <i class="fas fa-check"></i> No IP Blocking</li>
                         <li>
-                            <i class="fas fa-check"></i> 99.9% Uptime SLA</li>
+                            <i class="fas fa-check"></i> Custom Domain Support</li>
                         <li>
-                            <i class="fas fa-check"></i> Bulk Processing</li>
+                            <i class="fas fa-check"></i> Priority Email Support</li>
                     </ul>
-                    <a href="#" class="btn-outline">Contact Us</a>
+                    <a href="#" class="btn-outline">Subscribe Now</a>
                 </div>
             </div>
         </section>
+
+        <!-- Sign Up Modal -->
+        <div class="modal" id="signupModal">
+            <div class="modal-content">
+                <i class="fas fa-user-plus" style="font-size:3rem; color:var(--primary); margin-bottom:20px;"></i>
+                <h2>Unlock More!</h2>
+                <p style="color:#64748b; margin-bottom:30px;">Sign up today and get 10 extra daily downloads for free!</p>
+                <input id="signupEmail" placeholder="Enter your email" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:15px;" type="email"/>
+                <button class="btn-started" onclick="simulatedSignup()" style="width:100%;">Create Account</button>
+                <p onclick="closeModal()" style="margin-top:20px; font-size:0.8rem; cursor:pointer; color:#94a3b8;">Maybe later</p>
+            </div>
+        </div>
 
         <!-- Bottom Ad Slot -->
         <div class='ad-slot' style='margin: 50px auto;'>
@@ -633,6 +686,56 @@
                 btn.disabled = false;
                 btn.innerText = 'Download Now';
             }
+
+            // Limit Logic
+            function isUserSignedUp() {
+                return localStorage.getItem('insta_signed_up') === 'true';
+            }
+
+            async function updateLimits() {
+                const signedUp = isUserSignedUp();
+                try {
+                    const res = await fetch(`${API_BASE}/check-limit`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ signed_up: signedUp })
+                    });
+                    const data = await res.json();
+                    document.getElementById('limitText').innerText = `Downloads Left: ${data.remaining} / ${data.limit}`;
+                    
+                    if (data.remaining <= 0 && !signedUp) {
+                        setTimeout(() => { document.getElementById('signupModal').style.display = 'flex'; }, 2000);
+                    }
+                } catch (e) {
+                    document.getElementById('limitText').innerText = "Usage limit may apply";
+                }
+            }
+
+            function simulatedSignup() {
+                const email = document.getElementById('signupEmail').value;
+                if (!email.includes('@')) { alert('Please enter valid email'); return; }
+                localStorage.setItem('insta_signed_up', 'true');
+                closeModal();
+                updateLimits();
+                alert('Success! You now have 20 daily downloads.');
+            }
+
+            function closeModal() {
+                document.getElementById('signupModal').style.display = 'none';
+            }
+
+            // Replace startDownload Fetch to include signup status
+            const originalFetch = window.fetch;
+            window.fetch = function() {
+                if (arguments[0].includes('/download') && arguments[1] && arguments[1].body) {
+                    const body = JSON.parse(arguments[1].body);
+                    body.signed_up = isUserSignedUp();
+                    arguments[1].body = JSON.stringify(body);
+                }
+                return originalFetch.apply(this, arguments);
+            };
+
+            updateLimits();
         </script>
-    </body>
+</body>
 </html>

@@ -25,8 +25,9 @@ DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'downloads')
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
-# Status tracking for GitHub Actions polling
-# Format: {job_id: {'status': 'pending/ready/failed', 'filename': '...'}}
+# Usage tracking
+# Format: {ip: {'count': 0, 'last_reset': timestamp}}
+user_usage = {}
 job_status = {}
 
 # Cleanup task to delete files older than 20 minutes
@@ -129,6 +130,15 @@ def index():
 @app.route('/download', methods=['POST'])
 @limiter.limit("5 per minute")
 def handle_download():
+    ip = get_remote_address()
+    is_signed_up = request.json.get('signed_up', False)
+    limit = 20 if is_signed_up else 10
+    
+    # Simple limit check
+    usage = user_usage.get(ip, 0)
+    if usage >= limit:
+        return jsonify({'success': False, 'message': f'Daily limit reached ({limit} downloads). Sign up for more or buy a plan!'}), 403
+
     data = request.json
     url = data.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
@@ -136,11 +146,21 @@ def handle_download():
     status, result = download_video(url)
     
     if status == "SUCCESS":
-        return jsonify({'success': True, 'status': 'ready', 'filename': result})
+        user_usage[ip] = usage + 1
+        return jsonify({'success': True, 'status': 'ready', 'filename': result, 'remaining': limit - (usage + 1)})
     elif status == "PENDING_GITHUB":
-        return jsonify({'success': True, 'status': 'pending', 'job_id': result, 'message': 'Hugging Face is blocked. Switching to GitHub Backup...' })
+        user_usage[ip] = usage + 1
+        return jsonify({'success': True, 'status': 'pending', 'job_id': result, 'remaining': limit - (usage + 1), 'message': 'Hugging Face is blocked. Switching to GitHub Backup...' })
     else:
         return jsonify({'success': False, 'message': result})
+
+@app.route('/check-limit', methods=['POST'])
+def check_limit():
+    ip = get_remote_address()
+    is_signed_up = request.json.get('signed_up', False)
+    limit = 20 if is_signed_up else 10
+    usage = user_usage.get(ip, 0)
+    return jsonify({'usage': usage, 'limit': limit, 'remaining': max(0, limit - usage)})
 
 @app.route('/status/<job_id>')
 def check_status(job_id):
