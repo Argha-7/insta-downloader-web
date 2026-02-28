@@ -1154,42 +1154,39 @@
                     this.init();
                 }
                 init() {
-                    // Create a focused Halo/Galaxy ring around the center
-                    const angle = Math.random() * Math.PI * 2;
-                    // Concentrating particles in a ring (250px to 600px range)
-                    const radius = 220 + (Math.random() * Math.random() * 450); 
+                    // Full screen distribution with central weight
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
                     
-                    // Slightly elliptical for wider screens
-                    const spreadX = canvas.width > 1200 ? 1.4 : 1.1;
-                    this.baseX = canvas.width/2 + Math.cos(angle) * radius * spreadX;
-                    this.baseY = canvas.height/2 + Math.sin(angle) * radius;
+                    // Base position for return logic (centered-weight random)
+                    this.baseX = this.x;
+                    this.baseY = this.y;
                     
-                    this.x = this.baseX;
-                    this.y = this.baseY;
-                    this.size = Math.random() * 3 + 0.5; // Varied sizes for depth
+                    this.size = Math.random() * 2 + 0.3; 
                     this.color = colors[Math.floor(Math.random() * colors.length)];
-                    this.density = (Math.random() * 40) + 15;
-                    this.alpha = Math.random() * 0.7 + 0.3;
-                    
-                    // Continuous motion offset
-                    this.randomOffset = Math.random() * 1000;
-                    this.floatSpeed = 0.001 + Math.random() * 0.002;
-                    this.amplitude = 5 + Math.random() * 15;
+                    this.density = (Math.random() * 30) + 15;
+                    this.alpha = Math.random() * 0.4 + 0.1;
+
+                    // Constant Jitter / Drift velocity
+                    this.vX = (Math.random() - 0.5) * 0.8;
+                    this.vY = (Math.random() - 0.5) * 0.8;
                 }
                 update() {
-                    // Continuous 'Breathing' / Floating Motion
-                    const time = Date.now() * this.floatSpeed + this.randomOffset;
-                    const driftX = Math.sin(time) * this.amplitude;
-                    const driftY = Math.cos(time * 0.8) * this.amplitude;
+                    // 1. Constant Jitter & Drift (Motion 'idher udher')
+                    this.baseX += this.vX;
+                    this.baseY += this.vY;
                     
-                    const targetX = this.baseX + driftX;
-                    const targetY = this.baseY + driftY;
+                    // Wrap around screen
+                    if (this.baseX < 0) this.baseX = canvas.width;
+                    if (this.baseX > canvas.width) this.baseX = 0;
+                    if (this.baseY < 0) this.baseY = canvas.height;
+                    if (this.baseY > canvas.height) this.baseY = 0;
 
-                    // Interaction with mouse (Magnetic Repel)
+                    // 2. Interaction with mouse (Magnetic Repel)
                     let dx = mouseX - this.x;
                     let dy = mouseY - this.y;
                     let distance = Math.sqrt(dx*dx + dy*dy);
-                    let maxDistance = 200;
+                    let maxDistance = 180;
 
                     if (distance < maxDistance) {
                         let force = (maxDistance - distance) / maxDistance;
@@ -1198,9 +1195,9 @@
                         this.x -= directionX;
                         this.y -= directionY;
                     } else {
-                        // Smoothly elastic return to the animated target position
-                        this.x -= (this.x - targetX) / 20;
-                        this.y -= (this.y - targetY) / 20;
+                        // Return to animated drift position (snappy return)
+                        this.x -= (this.x - this.baseX) / 10;
+                        this.y -= (this.y - this.baseY) / 10;
                     }
                 }
                 draw() {
@@ -1215,8 +1212,8 @@
 
             function initParticles() {
                 particles = [];
-                // Dramatically increase particle density
-                const count = (canvas.width * canvas.height) / 2500;
+                // Ultra-dense particle field (1 dot per 800 pixels)
+                const count = (canvas.width * canvas.height) / 800;
                 for (let i = 0; i < count; i++) {
                     particles.push(new Particle());
                 }
