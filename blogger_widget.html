@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Blogger Tool UI by Antigravity -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF3366;
+            --secondary: #21D4FD;
+            --bg: #0F172A;
+            --card: #1E293B;
+            --text: #F1F5F9;
+            --text-muted: #94A3B8;
+        }
+
+        .insta-tool-container {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2.5rem;
+            border-radius: 20px;
+            max-width: 600px;
+            margin: 20px auto;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .insta-tool-container h2 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .insta-tool-container p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-box {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-box input {
+            width: 100%;
+            padding: 1.25rem 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid #334155;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-box input:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px rgba(33, 212, 253, 0.2);
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 1.25rem;
+            background: linear-gradient(45deg, var(--primary), #B721FF);
+            color: white;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: transform 0.2s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .download-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #toolStatus {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+
+        .success { background: rgba(16, 185, 129, 0.1); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .error { background: rgba(239, 68, 68, 0.1); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Ads placeholder */
+        .ad-space {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border: 1px dashed #334155;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: #64748B;
+        }
+    </style>
+</head>
+<body>
+
+<div class="insta-tool-container">
+    <h2>InstaStream Downloader</h2>
+    <p>Download Reels, IGTV & Videos in High Quality 🚀</p>
+
+    <div class="input-box">
+        <input type="text" id="igUrl" placeholder="Paste Instagram Link Here..." autocomplete="off">
+    </div>
+
+    <button id="igBtn" onclick="processDownload()" class="download-btn">
+        Download Now
+    </button>
+
+    <div id="toolStatus"></div>
+
+    <div class="ad-space">
+        <!-- REPLACE THIS WITH YOUR ADSENSE CODE LATER -->
+        [ Your Ad Slot Here ]
+    </div>
+</div>
+
+<script>
+    // 🔥 CONFIG: Replace with your Hugging Face Space URL
+    const API_BASE_URL = "https://argha-7-insta-downloader-web.hf.space";
+
+    async function processDownload() {
+        const urlInput = document.getElementById('igUrl');
+        const btn = document.getElementById('igBtn');
+        const status = document.getElementById('toolStatus');
+
+        const url = urlInput.value.trim();
+        if (!url) {
+            showStatus("Please paste a valid link first!", "error");
+            return;
+        }
+
+        // UI Reset
+        status.style.display = 'none';
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner"></div> Processing...';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/download`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showStatus("Success! Your video is ready. Downloading...", "success");
+                
+                // Create a temporary link to download the file directly from HF
+                const downloadLink = `${API_BASE_URL}/files/${data.filename}`;
+                window.location.href = downloadLink;
+                
+                // Reset input
+                urlInput.value = "";
+            } else {
+                showStatus(`Failed: ${data.message}`, "error");
+            }
+        } catch (err) {
+            showStatus("Connection failed. Make sure the backend Space is Running.", "error");
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Download Now';
+        }
+    }
+
+    function showStatus(msg, type) {
+        const status = document.getElementById('toolStatus');
+        status.innerText = msg;
+        status.className = type;
+        status.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
