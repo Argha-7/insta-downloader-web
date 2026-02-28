@@ -1130,10 +1130,11 @@
             }
             typeEffect();
 
-            // 2. Particle System Logic
+            // 2. Antigravity Halo Particle System
             const canvas = document.getElementById('particle-canvas');
             const ctx = canvas.getContext('2d');
             let particles = [];
+            const colors = ['#3b82f6', '#2dd4bf', '#f09433', '#e6683c', '#cc2366'];
 
             function resize() {
                 canvas.width = window.innerWidth;
@@ -1147,35 +1148,72 @@
                     this.init();
                 }
                 init() {
-                    this.x = Math.random() * canvas.width;
-                    this.y = Math.random() * canvas.height;
-                    this.size = Math.random() * 2 + 1;
-                    this.speedX = Math.random() * 1 - 0.5;
-                    this.speedY = Math.random() * 1 - 0.5;
-                    this.color = `rgba(59, 130, 246, ${Math.random() * 0.3})`;
+                    // Start in a large ring/halo distribution
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = 200 + Math.random() * (Math.max(canvas.width, canvas.height) * 0.5);
+                    this.baseX = canvas.width/2 + Math.cos(angle) * radius;
+                    this.baseY = canvas.height/2 + Math.sin(angle) * radius;
+                    this.x = this.baseX;
+                    this.y = this.baseY;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.color = colors[Math.floor(Math.random() * colors.length)];
+                    this.density = (Math.random() * 30) + 10;
+                    this.alpha = Math.random() * 0.6 + 0.2;
                 }
                 update() {
-                    this.x += this.speedX;
-                    this.y += this.speedY;
-                    if (this.x > canvas.width || this.x < 0) this.speedX *= -1;
-                    if (this.y > canvas.height || this.y < 0) this.speedY *= -1;
+                    // Interaction with mouse
+                    let dx = mouseX - this.x;
+                    let dy = mouseY - this.y;
+                    let distance = Math.sqrt(dx*dx + dy*dy);
+                    let forceDirectionX = dx / distance;
+                    let forceDirectionY = dy / distance;
+                    let maxDistance = 150;
+                    let force = (maxDistance - distance) / maxDistance;
+                    let directionX = forceDirectionX * force * this.density;
+                    let directionY = forceDirectionY * force * this.density;
+
+                    if (distance < maxDistance) {
+                        this.x -= directionX;
+                        this.y -= directionY;
+                    } else {
+                        // Return to base position with easing
+                        if (this.x !== this.baseX) {
+                            let dxBase = this.x - this.baseX;
+                            this.x -= dxBase/20;
+                        }
+                        if (this.y !== this.baseY) {
+                            let dyBase = this.y - this.baseY;
+                            this.y -= dyBase/20;
+                        }
+                    }
                 }
                 draw() {
                     ctx.fillStyle = this.color;
+                    ctx.globalAlpha = this.alpha;
                     ctx.beginPath();
                     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.globalAlpha = 1;
                 }
             }
 
-            for (let i = 0; i < 60; i++) particles.push(new Particle());
+            function initParticles() {
+                particles = [];
+                // More particles for a richer effect
+                const count = (canvas.width * canvas.height) / 8000;
+                for (let i = 0; i < count; i++) {
+                    particles.push(new Particle());
+                }
+            }
+            initParticles();
+            window.addEventListener('resize', initParticles);
 
             function animate() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                particles.forEach(p => {
-                    p.update();
-                    p.draw();
-                });
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+                }
                 requestAnimationFrame(animate);
             }
             animate();
