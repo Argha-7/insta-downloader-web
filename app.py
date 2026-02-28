@@ -10,8 +10,8 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
-# Explicitly allow the custom security header
-CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "X-App-Secret"]}})
+# Simplified CORS for debugging - allows all origins and headers temporarily
+CORS(app)
 
 # SECURITY CONFIG
 ALLOWED_ORIGINS = [
@@ -23,14 +23,12 @@ APP_SECRET = "insta_pro_ai_secure_99" # Simple secret key
 
 def verify_request():
     """Verify that the request comes from our site and has the secret."""
-    origin = request.headers.get('Origin') or request.headers.get('Referer')
     secret = request.headers.get('X-App-Secret')
-    
-    # Optional: For development, you can relax this, but for production it's critical
-    # if not origin or not any(o in origin for o in ALLOWED_ORIGINS):
-    #     return False
+    print(f"DEBUG: Headers received: {dict(request.headers)}")
+    print(f"DEBUG: Secret received: {secret}")
     
     if secret != APP_SECRET:
+        print("DEBUG: Secret mismatch!")
         return False
     return True
 

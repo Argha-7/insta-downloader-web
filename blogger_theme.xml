@@ -820,14 +820,16 @@
                         headers: getSecureHeaders(),
                         body: JSON.stringify({ url })
                     });
-                    const prevData = await prevRes.json();
-                    if (prevData && prevData.success) {
-                        currentMetadata = prevData;
-                        document.getElementById('progThumb').src = prevData.thumbnail;
-                        document.getElementById('progTitle').innerText = prevData.title;
+                    if (prevRes.ok) {
+                        const prevData = await prevRes.json();
+                        if (prevData && prevData.success) {
+                            currentMetadata = prevData;
+                            document.getElementById('progThumb').src = prevData.thumbnail;
+                            document.getElementById('progTitle').innerText = prevData.title;
+                        }
                     }
                 } catch (e) {
-                    console.log("Preview failed, continuing with download...");
+                    console.log("Preview failed:", e);
                 }
 
                 // 2. Start Actual Download
@@ -848,10 +850,11 @@
                             pollStatus(data.job_id);
                         }
                     } else {
-                        showError(data.message);
+                        showError(data.message || 'Error occurred');
                     }
                 } catch (e) {
-                    showError('Server is currently busy. Try again.');
+                    showError('Connection Error. Check console.');
+                    console.error("Download Error:", e);
                 }
             }
 
