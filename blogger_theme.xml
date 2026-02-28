@@ -228,15 +228,26 @@
         </nav>
 
         <main class='hero animate'>
-            <h1>Download Reels <br/>
- Without Limits.</h1>
-            <p>The fastest, safest, and most intelligent Instagram downloader. Free forever, no watermark, works on any device.</p>
+            <!-- Top Ad Slot -->
+            <div class='ad-slot'>
+                <!-- Paste Adsterra Header Ad Code Here -->
+                <span>ADSTERRA BANNER (728x90)</span>
+            </div>
 
-            <div class='search-card'>
+            <h1 class='animate delay-1' style='margin-top: 20px;'>Download Reels <br/>
+ Without Limits.</h1>
+            <p class='animate delay-2'>The fastest, safest, and most intelligent Instagram downloader. Free forever, no watermark, works on any device.</p>
+
+            <div class='search-card animate' style='animation-delay: 0.6s;'>
                 <input id='urlInput' placeholder='Paste Instagram URL here...' type='text'/>
                 <button class='btn-action' id='downloadBtn' onclick='startDownload()'>
                     Download Now
                 </button>
+            </div>
+
+            <!-- Middle Ad Slot -->
+            <div class='ad-slot' style='margin-top:40px;'>
+                <span>ADSTERRA NATIVE AD AREA</span>
             </div>
 
             <div class='progress-card' id='progressUI'>
