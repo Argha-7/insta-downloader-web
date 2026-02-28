@@ -10,7 +10,8 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
-CORS(app)
+# Explicitly allow the custom security header
+CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "X-App-Secret"]}})
 
 # SECURITY CONFIG
 ALLOWED_ORIGINS = [
