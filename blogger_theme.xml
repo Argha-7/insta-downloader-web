@@ -255,7 +255,13 @@
                 display: none;
                 flex-direction: column;
                 gap: 20px;
+                text-align: left;
             }
+
+            .progress-header { display: flex; gap: 20px; align-items: center; margin-bottom: 10px; }
+            .prog-thumb { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #eee; }
+            .prog-info { flex: 1; }
+            .prog-title { font-weight: 700; color: var(--dark); font-size: 1rem; }
 
             .progress-bar-wrap { width: 100%; background: #f1f5f9; border-radius: 10px; height: 12px; overflow: hidden; }
             #progressBar { width: 20%; height: 100%; background: var(--grad); transition: 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); }
@@ -543,7 +549,13 @@
             </div>
 
             <div class='progress-card' id='progressUI'>
-                <div id='statusText'>Initializing...</div>
+                <div class="progress-header">
+                    <img class="prog-thumb" id="progThumb" src="https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"/>
+                    <div class="prog-info">
+                        <div class="prog-title" id="progTitle">Analyzing video...</div>
+                        <div id='statusText'>Initializing...</div>
+                    </div>
+                </div>
                 <div class='progress-bar-wrap'>
                     <div id='progressBar'></div>
                 </div>
@@ -768,6 +780,8 @@
         <script>
             const API_BASE = "https://argha-7-insta-downloader-web.hf.space";
 
+            let currentMetadata = {};
+
             async function startDownload() {
                 const url = document.getElementById('urlInput').value.trim();
                 const btn = document.getElementById('downloadBtn');
@@ -783,12 +797,30 @@
 
                 // Reset and Show Progress
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
                 resultDiv.style.display = 'none';
                 progressUI.style.display = 'flex';
-                progressBar.style.width = '20%';
+                progressBar.style.width = '10%';
                 statusText.innerText = 'Connecting to server...';
 
+                // 1. Fetch Instant Preview (Wow Factor)
+                try {
+                    const prevRes = await fetch(`${API_BASE}/preview`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url })
+                    });
+                    const prevData = await prevRes.json();
+                    if (prevData && prevData.success) {
+                        currentMetadata = prevData;
+                        document.getElementById('progThumb').src = prevData.thumbnail;
+                        document.getElementById('progTitle').innerText = prevData.title;
+                    }
+                } catch (e) {
+                    console.log("Preview failed, continuing with download...");
+                }
+
+                // 2. Start Actual Download
                 try {
                     const response = await fetch(`${API_BASE}/download`, {
                         method: 'POST',
@@ -830,8 +862,8 @@
                             clearInterval(interval);
                             showSuccess({
                                 filename: data.filename,
-                                title: "Instagram Video",
-                                thumbnail: "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"
+                                title: currentMetadata.title || "Instagram Video",
+                                thumbnail: currentMetadata.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"
                             });
                         } else {
                             statusText.innerText = `GitHub Processing... (${count * 5}s)`;

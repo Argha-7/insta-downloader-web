@@ -180,6 +180,34 @@ def check_limit():
     usage = user_usage.get(ip, 0)
     return jsonify({'usage': usage, 'limit': limit, 'remaining': max(0, limit - usage)})
 
+@app.route('/preview', methods=['POST'])
+def get_preview():
+    """Fetches metadata (title/thumbnail) without downloading."""
+    url = request.json.get('url')
+    if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
+    
+    if '?' in url: url = url.split('?')[0]
+    
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'nocheckcertificate': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        }
+    }
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            return jsonify({
+                'success': True,
+                'title': info.get('title', 'Instagram Video'),
+                'thumbnail': info.get('thumbnail', '')
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 403
+
 @app.route('/status/<job_id>')
 def check_status(job_id):
     """Blogger polls this to see if GitHub is done."""
