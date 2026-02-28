@@ -289,11 +289,24 @@
             <p>Paste the URL of the Instagram reel and press to download in HD quality</p>
 
             <div class='search-box'>
-                <input id='igUrl' placeholder='Paste Instagram link here...' type='text'/>
-                <button class='btn-download' id='igBtn' onclick='handlePipe()'>Download</button>
+                <input id='urlInput' placeholder='Paste Instagram link here...' type='text'/>
+                <button class='btn-download' id='downloadBtn' onclick='startDownload()'>Download</button>
             </div>
 
-            <div id='stat'></div>
+            <!-- Progress & Status -->
+            <div class='progress-container' style='display: none; max-width: 850px; margin: 30px auto; flex-direction: column; gap: 10px;'>
+                <div style='width: 100%; background: #E5E7EB; border-radius: 10px; height: 10px; overflow: hidden;'>
+                    <div id='progressBar' style='width: 0%; height: 100%; background: var(--primary); transition: 0.3s;'></div>
+                </div>
+                <div id='statusText' style='font-size: 0.95rem; color: var(--dark); font-weight: 500;'>Processing...</div>
+            </div>
+
+            <!-- Result Button -->
+            <div id='result' style='display: none; margin-top: 30px;'>
+                <a class='btn-started' id='downloadLink' style='font-size: 1.1rem; padding: 15px 40px;' target='_blank'>
+                    <i class='fas fa-download'></i> Download mp4 Now
+                </a>
+            </div>
 
             <div class='meta-links'>
                 <p>No ads. No watermarks. No registration.</p>
@@ -313,50 +326,122 @@
         </div>
 
         <script>
-        const API_URL = "https://argha-7-insta-downloader-web.hf.space";
+            const API_BASE = "https://argha-7-insta-downloader-web.hf.space";
 
-        async function handlePipe() {
-            const inp = document.getElementById('igUrl');
-            const btn = document.getElementById('igBtn');
-            const log = document.getElementById('stat');
+            async function startDownload() {
+                const urlInput = document.getElementById('urlInput');
+                const url = urlInput.value.trim();
+                const btn = document.getElementById('downloadBtn');
+                const resultDiv = document.getElementById('result');
+                const statusText = document.getElementById('statusText');
+                const progressBar = document.getElementById('progressBar');
+                const progressContainer = document.querySelector('.progress-container');
 
-            const val = inp.value.trim();
-            if(!val) return;
-
-            log.style.display = 'none';
-            btn.disabled = true;
-            btn.innerText = 'Processing...';
-
-            try {
-                const res = await fetch(`${API_URL}/download`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: val })
-                });
-
-                const data = await res.json();
-
-                if (data.success) {
-                    show("Success! Downloading your video...", "ok");
-                    window.location.href = `${API_URL}/files/${data.filename}`;
-                    inp.value = "";
-                } else {
-                    show("Error: " + data.message, "err");
+                if (!url) {
+                    showError('Please paste an Instagram link first!');
+                    return;
                 }
-            } catch (e) {
-                show("Backend Space is sleeping. Please wake it up.", "err");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'Download';
-            }
-        }
 
-        function show(m, c) {
-            const log = document.getElementById('stat');
-            log.innerText = m;
-            log.className = c;
-            log.style.display = 'block';
-        }
+                // Reset UI
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+                resultDiv.style.display = 'none';
+                progressContainer.style.display = 'flex'; // Changed from block to flex to match container style
+                progressBar.style.width = '20%';
+                progressBar.style.background = 'var(--primary)'; // Reset background color
+                statusText.innerText = 'Analyzing link...';
+                statusText.style.color = 'var(--dark)'; // Reset text color
+
+                try {
+                    const response = await fetch(`${API_BASE}/download`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: url })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (data.status === 'ready') {
+                            showDownloadButton(data.filename);
+                        } else if (data.status === 'pending') {
+                            // Start Polling for GitHub Action
+                            statusText.innerText = data.message || 'HF Blocked. Using GitHub Backup...';
+                            progressBar.style.width = '50%';
+                            pollStatus(data.job_id);
+                        }
+                    } else {
+                        showError(data.message);
+                        resetButton();
+                    }
+                } catch (err) {
+                    showError('Server connection failed. Try again.');
+                    resetButton();
+                }
+            }
+
+            async function pollStatus(jobId) {
+                const statusText = document.getElementById('statusText');
+                const progressBar = document.getElementById('progressBar');
+                
+                let attempts = 0;
+                const maxAttempts = 60; // 5 minutes max
+
+                const interval = setInterval(async () => {
+                    attempts++;
+                    if (attempts > maxAttempts) {
+                        clearInterval(interval);
+                        showError('Backup takes too long. Please try again later.');
+                        resetButton();
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`${API_BASE}/status/${jobId}`);
+                        const data = await response.json();
+
+                        if (data.status === 'ready') {
+                            clearInterval(interval);
+                            showDownloadButton(data.filename);
+                        } else if (data.status === 'failed') {
+                            clearInterval(interval);
+                            showError('Backup also failed. Instagram is very strict right now.');
+                            resetButton();
+                        } else {
+                            // Still pending
+                            statusText.innerText = `GitHub is downloading... (${attempts*5}s)`;
+                            progressBar.style.width = `${50 + (attempts * 0.5)}%`;
+                        }
+                    } catch (e) {
+                        console.error('Polling error:', e);
+                    }
+                }, 5000); // Poll every 5 seconds
+            }
+
+            function showDownloadButton(filename) {
+                const resultDiv = document.getElementById('result');
+                const downloadLink = document.getElementById('downloadLink');
+                const progressContainer = document.querySelector('.progress-container');
+                
+                progressContainer.style.display = 'none';
+                resultDiv.style.display = 'block';
+                downloadLink.href = `${API_BASE}/files/${filename}`;
+                resetButton();
+            }
+
+            function showError(msg) {
+                const statusText = document.getElementById('statusText');
+                const progressBar = document.getElementById('progressBar');
+                statusText.innerText = msg;
+                statusText.style.color = '#ff4b2b';
+                progressBar.style.background = '#ff4b2b';
+            }
+
+            function resetButton() {
+                const btn = document.getElementById('downloadBtn');
+                btn.disabled = false;
+                btn.innerHTML = 'Download'; // Changed back to 'Download' from 'Download Video' to match original button text
+            }
         </script>
     </body>
 </html>

@@ -1,11 +1,12 @@
-name: Emergency Video Downloader
-
 on:
   workflow_dispatch:
     inputs:
       video_url:
         description: 'Instagram Reel/Video URL'
         required: true
+      callback_url:
+        description: 'Hugging Face Callback URL'
+        required: false
 
 jobs:
   download:
@@ -22,14 +23,24 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install yt-dlp
+          pip install yt-dlp requests
 
       - name: Download Video
+        id: dl
         run: |
           mkdir -p output
-          python -m yt_dlp "${{ github.event.inputs.video_url }}" -o "output/%(title)s.%(ext)s"
+          # Use a clean filename for the callback
+          python -m yt_dlp "${{ github.event.inputs.video_url }}" -o "output/video.%(ext)s"
+          # Find the actual filename (e.g., video.mp4)
+          REAL_PATH=$(ls output/video.* | head -n 1)
+          echo "file_path=$REAL_PATH" >> $GITHUB_OUTPUT
 
-      - name: Upload Artifact
+      - name: Send to Callback
+        if: ${{ github.event.inputs.callback_url != '' }}
+        run: |
+          curl -X POST -F "file=@${{ steps.dl.outputs.file_path }}" "${{ github.event.inputs.callback_url }}"
+
+      - name: Upload Artifact (Backup)
         uses: actions/upload-artifact@v4
         with:
           name: downloaded-video

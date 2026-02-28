@@ -3,3 +3,4 @@ flask-cors==6.0.2
 yt-dlp>=2024.3.10
 gunicorn
 Flask-Limiter==4.1.1
+requests
