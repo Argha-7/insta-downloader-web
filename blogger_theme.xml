@@ -12,8 +12,9 @@
             <data:blog.pageTitle/>
         </title>
 
-        <link href='https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&amp;display=swap' rel='stylesheet'/>
+        <link href='https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&amp;display=swap' rel='stylesheet'/>
         <link href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css' rel='stylesheet'/>
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
         <b:skin><![CDATA[ /* Blogger Required Skin */ ]]></b:skin>
 
@@ -46,11 +47,10 @@
             /* Advanced Animations */
             @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
             @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-            @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
-            @keyframes bgShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
             @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
             @keyframes reveal { 0% { width: 0; } 100% { width: 100%; } }
             @keyframes glow { 0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); } 50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); } }
+            @keyframes igGlow { 0% { border-color: #f09433; box-shadow: 0 0 10px #f09433; } 33% { border-color: #e6683c; box-shadow: 0 0 10px #e6683c; } 66% { border-color: #dc2743; box-shadow: 0 0 10px #dc2743; } 100% { border-color: #cc2366; box-shadow: 0 0 10px #cc2366; } }
 
             .animate { animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
             .delay-1 { animation-delay: 0.2s; }
@@ -176,12 +176,36 @@
                 padding: 15px;
                 border-radius: 24px;
                 display: flex;
-                border: 1px solid var(--glass-border);
+                border: 2px solid transparent;
                 box-shadow: var(--shadow);
-                animation: glow 4s infinite;
+                transition: 0.4s;
+                position: relative;
+                z-index: 10;
             }
 
-            .search-card:focus-within { transform: scale(1.02); }
+            .search-card:focus-within { 
+                animation: igGlow 3s linear infinite;
+            }
+
+            .typing-cursor {
+                display: inline-block;
+                width: 3px;
+                height: 1em;
+                background: var(--primary);
+                margin-left: 5px;
+                vertical-align: middle;
+                animation: pulse 1s infinite;
+            }
+
+            #particle-canvas {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: -2;
+                pointer-events: none;
+            }
 
             .search-card input {
                 flex: 1;
@@ -567,6 +591,7 @@
         </style>
     </head>
     <body>
+        <canvas id='particle-canvas'></canvas>
         <nav class='navbar'>
             <a class='logo' href='/'>
                 <i class="fab fa-instagram"></i> InstaStream <span>AI</span>
@@ -586,7 +611,9 @@
                 <span>ADSTERRA BANNER (728x90)</span>
             </div>
 
-            <h1 class='animate delay-1' style='margin-top: 20px;'>Download Reels <br/>
+            <h1 class='animate delay-1' style='margin-top: 20px;'>Download <span id='typing-text'></span>
+                <span class='typing-cursor'>|</span>
+                <br/>
  Without Limits.</h1>
             <p class='animate delay-2'>The fastest, safest, and most intelligent Instagram downloader. Free forever, no watermark, works on any device.</p>
 
@@ -903,6 +930,13 @@
                     if (data.success) {
                         if (data.status === 'ready') {
                             showSuccess(data);
+                            // Confetti burst on success! 🎉
+                            confetti({
+                                particleCount: 150,
+                                spread: 70,
+                                origin: { y: 0.6 },
+                                colors: ['#3b82f6', '#2dd4bf', '#f09433', '#e6683c']
+                            });
                         } else if (data.status === 'pending') {
                             statusText.innerText = 'Server blocked. Activating Smart Backup...';
                             progressBar.style.width = '50%';
@@ -1025,6 +1059,88 @@
             };
 
             updateLimits();
+
+            // --- INTERACTIVE FEATURES: TYPING & PARTICLES ---
+
+            // 1. Typing Effect Logic
+            const typingText = document.getElementById('typing-text');
+            const phrases = ["Reels", "Stories", "IGTV", "Videos", "Photos"];
+            let phraseIdx = 0;
+            let charIdx = 0;
+            let isDeleting = false;
+
+            function typeEffect() {
+                const currentPhrase = phrases[phraseIdx];
+                if (isDeleting) {
+                    typingText.innerText = currentPhrase.substring(0, charIdx - 1);
+                    charIdx--;
+                } else {
+                    typingText.innerText = currentPhrase.substring(0, charIdx + 1);
+                    charIdx++;
+                }
+
+                let speed = isDeleting ? 50 : 150;
+                if (!isDeleting && charIdx === currentPhrase.length) {
+                    isDeleting = true;
+                    speed = 2000; // Pause at end
+                } else if (isDeleting && charIdx === 0) {
+                    isDeleting = false;
+                    phraseIdx = (phraseIdx + 1) % phrases.length;
+                    speed = 500;
+                }
+                setTimeout(typeEffect, speed);
+            }
+            typeEffect();
+
+            // 2. Particle System Logic
+            const canvas = document.getElementById('particle-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            class Particle {
+                constructor() {
+                    this.init();
+                }
+                init() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2 + 1;
+                    this.speedX = Math.random() * 1 - 0.5;
+                    this.speedY = Math.random() * 1 - 0.5;
+                    this.color = `rgba(59, 130, 246, ${Math.random() * 0.3})`;
+                }
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    if (this.x > canvas.width || this.x < 0) this.speedX *= -1;
+                    if (this.y > canvas.height || this.y < 0) this.speedY *= -1;
+                }
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
         </script>
 </body>
 </html>
