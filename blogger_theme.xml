@@ -224,7 +224,12 @@
             <a class='logo' href='/'>
                 <i class="fab fa-instagram"></i> InstaStream <span>AI</span>
             </a>
-            <a class='btn-started' href='#'>Sign Up</a>
+            <div style="display: flex; gap: 30px; align-items: center;" class="nav-links">
+                <a href="#" style="text-decoration:none; color:var(--dark); font-weight:600;">Home</a>
+                <a href="#features" style="text-decoration:none; color:var(--dark); font-weight:600;">Features</a>
+                <a href="#pricing" style="text-decoration:none; color:var(--dark); font-weight:600;">Pricing</a>
+            </div>
+            <a class='btn-started' href='#'>Get Started</a>
         </nav>
 
         <main class='hero animate'>
@@ -266,7 +271,7 @@
             </div>
         </main>
 
-        <section class='features animate' style='background: linear-gradient(-45deg, #f8fafc, #eff6ff, #f8fafc); background-size: 400% 400%; animation: bgShift 15s ease infinite;'>
+        <section class='features animate' id='features' style='background: linear-gradient(-45deg, #f8fafc, #eff6ff, #f8fafc); background-size: 400% 400%; animation: bgShift 15s ease infinite;'>
             <div class='f-card animate delay-1'>
                 <i class="fas fa-bolt"></i>
                 <h3>Turbo Speed</h3>
@@ -281,6 +286,65 @@
                 <i class="fas fa-infinity"></i>
                 <h3>Smart Failover</h3>
                 <p>Exclusive AI technology that automatically switches servers if Instagram blocks the connection.</p>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section class='pricing animate' id='pricing'>
+            <h2>Plans for Everyone</h2>
+            <p>Choose the plan that fits your needs. Start for free today.</p>
+
+            <div class='pricing-grid'>
+                <div class='p-card'>
+                    <h4>Free Tier</h4>
+                    <div class='price'>$0 <span>/month</span>
+                    </div>
+                    <ul>
+                        <li>
+                            <i class="fas fa-check"></i> Unlimited Downloads</li>
+                        <li>
+                            <i class="fas fa-check"></i> HD Quality Video</li>
+                        <li>
+                            <i class="fas fa-check"></i> Smart Failover System</li>
+                        <li>
+                            <i class="fas fa-check"></i> No Registration</li>
+                    </ul>
+                    <a href="#" class="btn-outline">Current Plan</a>
+                </div>
+
+                <div class='p-card popular'>
+                    <div style="background:var(--primary); color:white; font-size:0.7rem; padding:5px 15px; position:absolute; top:20px; right:-30px; transform:rotate(45deg); width:120px;">MOST POPULAR</div>
+                    <h4>Support Tier</h4>
+                    <div class='price'>$2 <span>/coffee</span>
+                    </div>
+                    <ul>
+                        <li>
+                            <i class="fas fa-check"></i> Fast Callback API</li>
+                        <li>
+                            <i class="fas fa-check"></i> No Commercial Ads</li>
+                        <li>
+                            <i class="fas fa-check"></i> Early Feature Access</li>
+                        <li>
+                            <i class="fas fa-check"></i> Priority Support</li>
+                    </ul>
+                    <a href="#" class="btn-started" style="display:block;">Buy a Coffee ☕</a>
+                </div>
+
+                <div class='p-card'>
+                    <h4>Enterprise</h4>
+                    <div class='price'>Custom</div>
+                    <ul>
+                        <li>
+                            <i class="fas fa-check"></i> API Integration</li>
+                        <li>
+                            <i class="fas fa-check"></i> Dedicated Instances</li>
+                        <li>
+                            <i class="fas fa-check"></i> 99.9% Uptime SLA</li>
+                        <li>
+                            <i class="fas fa-check"></i> Bulk Processing</li>
+                    </ul>
+                    <a href="#" class="btn-outline">Contact Us</a>
+                </div>
             </div>
         </section>
 
