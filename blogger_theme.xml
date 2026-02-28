@@ -19,16 +19,18 @@
 
         <style>
             :root {
-                --primary: #6366f1;
-                --primary-dark: #4f46e5;
+                --primary: #3b82f6; /* More vibrant blue like image */
+                --primary-dark: #2563eb;
                 --secondary: #06b6d4;
                 --dark: #0f172a;
                 --light: #f8fafc;
                 --white: #ffffff;
-                --glass: rgba(255, 255, 255, 0.7);
-                --glass-border: rgba(255, 255, 255, 0.3);
-                --shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
-                --grad: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+                --text-muted: #64748b;
+                --border: #e2e8f0;
+                --glass: rgba(255, 255, 255, 0.85);
+                --glass-border: rgba(255, 255, 255, 0.2);
+                --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+                --grad: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
             }
 
             * { box-sizing: border-box; transition: all 0.3s ease; }
@@ -72,8 +74,8 @@
             /* Navbar */
             .navbar {
                 background: var(--glass);
-                backdrop-filter: blur(10px);
-                padding: 1rem 10%;
+                backdrop-filter: blur(15px);
+                padding: 1.2rem 10%;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -81,7 +83,18 @@
                 position: sticky;
                 top: 0;
                 z-index: 1000;
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
             }
+
+            .nav-links { display: flex; gap: 35px; align-items: center; }
+            .nav-links a { 
+                text-decoration: none; 
+                color: #475569; 
+                font-weight: 600; 
+                font-size: 0.95rem;
+                transition: 0.3s;
+            }
+            .nav-links a:hover { color: var(--primary); }
 
             .logo {
                 font-size: 1.6rem;
@@ -107,21 +120,44 @@
 
             /* Hero Section */
             .hero {
-                padding: 120px 20px;
+                padding: 100px 20px 140px;
                 text-align: center;
                 position: relative;
-                background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent),
-                            radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.05), transparent);
+                overflow: hidden;
+            }
+
+            .hero::before {
+                content: '';
+                position: absolute;
+                top: -10%; right: -10%;
+                width: 400px; height: 400px;
+                background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+                filter: blur(80px);
+                z-index: -1;
+                animation: float 10s infinite alternate;
+            }
+
+            .hero::after {
+                content: '';
+                position: absolute;
+                bottom: -10%; left: -10%;
+                width: 350px; height: 350px;
+                background: radial-gradient(circle, rgba(45, 212, 191, 0.1) 0%, transparent 70%);
+                filter: blur(80px);
+                z-index: -1;
+                animation: float 12s infinite alternate-reverse;
             }
 
             .hero h1 {
-                font-size: clamp(2.5rem, 6vw, 4rem);
+                font-size: clamp(2.8rem, 8vw, 4.5rem);
                 font-weight: 800;
-                margin-bottom: 20px;
-                background: var(--grad);
+                margin-bottom: 25px;
+                line-height: 1.1;
+                color: #1e40af; /* Deep blue like the image */
+                background: linear-gradient(to bottom, #1e40af, #3b82f6);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
-                letter-spacing: -2px;
+                letter-spacing: -3px;
             }
 
             .hero p { color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto 50px; }
