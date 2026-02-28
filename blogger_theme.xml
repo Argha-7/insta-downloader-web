@@ -779,7 +779,7 @@
 
         <script>
             // Hiding API and Secrets from simple inspection
-            const _0x1a2b = ["aHR0cHM6Ly9hcmdoYS03LWluc3RhLWRvd25sb2FkZXitd2ViLmhmLnNwYWNl", "aW5zdGFfcHJvX2FpX3NlY3VyZV85OQ=="];
+            const _0x1a2b = ["aHR0cHM6Ly9hcmdoYS03LWluc3RhLWRvd25sb2FkZXItd2ViLmhmLnNwYWNl", "aW5zdGFfcHJvX2FpX3NlY3VyZV85OQ=="];
             const API_BASE = atob(_0x1a2b[0]);
             const _S = atob(_0x1a2b[1]);
 
