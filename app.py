@@ -8,6 +8,21 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import firebase_admin
+from firebase_admin import credentials, auth, firestore
+
+# Firebase Initialization
+# You must provide 'serviceAccountKey.json' in the same directory
+try:
+    if not firebase_admin._apps:
+        cred = credentials.Certificate('serviceAccountKey.json')
+        firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    FIREBASE_ENABLED = True
+    print("FIREBASE: Successfully initialized.")
+except Exception as e:
+    FIREBASE_ENABLED = False
+    print(f"FIREBASE WARNING: Service account not found or invalid: {e}")
 
 app = Flask(__name__)
 # Simplified CORS for debugging - allows all origins and headers temporarily
@@ -45,9 +60,69 @@ DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'downloads')
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
-# Usage tracking
-# Format: {ip: {'count': 0, 'last_reset': timestamp}}
+# Usage tracking (Universal System)
+# Format for Guest: {ip: {'count': 0, 'balance': 0.0, 'last_reset': timestamp}}
 user_usage = {}
+DAILY_LIMIT = 10
+REWARD_PER_DOWNLOAD = 0.20
+
+def get_user_data(token_id=None, ip=None):
+    """Get user stats from Firestore (if token) or memory (if guest)."""
+    now = time.time()
+    
+    # CASE 1: Authenticated User (Firebase)
+    if token_id and FIREBASE_ENABLED:
+        try:
+            decoded_token = auth.verify_id_token(token_id)
+            uid = decoded_token['uid']
+            user_ref = db.collection('users').document(uid)
+            doc = user_ref.get()
+            
+            if doc.exists:
+                data = doc.to_dict()
+                # Check for daily reset (00:00 server time or 24h)
+                if now - data.get('last_reset', 0) > 86400:
+                    data['count'] = 0
+                    data['last_reset'] = now
+                    user_ref.update({'count': 0, 'last_reset': now})
+                return {'uid': uid, 'data': data, 'is_guest': False}
+            else:
+                # Initialize new user in Firestore
+                new_data = {
+                    'count': 0, 
+                    'balance': 0.0, 
+                    'last_reset': now, 
+                    'email': decoded_token.get('email', ''),
+                    'name': decoded_token.get('name', 'User')
+                }
+                user_ref.set(new_data)
+                return {'uid': uid, 'data': new_data, 'is_guest': False}
+        except Exception as e:
+            print(f"FIREBASE AUTH ERROR: {e}")
+
+    # CASE 2: Guest User (IP Based)
+    if ip not in user_usage:
+        user_usage[ip] = {'count': 0, 'balance': 0.0, 'last_reset': now}
+    
+    if now - user_usage[ip]['last_reset'] > 86400:
+        user_usage[ip] = {'count': 0, 'balance': 0.0, 'last_reset': now}
+        
+    return {'uid': ip, 'data': user_usage[ip], 'is_guest': True}
+
+def update_user_stats(uid, delta_count, delta_balance, is_guest):
+    """Update user stats in Firestore or memory."""
+    if not is_guest and FIREBASE_ENABLED:
+        user_ref = db.collection('users').document(uid)
+        user_ref.update({
+            'count': firestore.Increment(delta_count),
+            'balance': firestore.Increment(delta_balance),
+            'last_activity': firestore.SERVER_TIMESTAMP
+        })
+    else:
+        # Update Guest in memory
+        if uid in user_usage:
+            user_usage[uid]['count'] += delta_count
+            user_usage[uid]['balance'] += delta_balance
 job_status = {}
 
 # Cleanup task to delete files older than 20 minutes
@@ -157,13 +232,14 @@ def handle_download():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
     ip = get_remote_address()
-    is_signed_up = request.json.get('signed_up', False)
-    limit = 20 if is_signed_up else 10
+    auth_header = request.headers.get('Authorization')
+    token = auth_header.split('Bearer ')[1] if auth_header and 'Bearer ' in auth_header else None
     
-    # Simple limit check
-    usage = user_usage.get(ip, 0)
-    if usage >= limit:
-        return jsonify({'success': False, 'message': f'Daily limit reached ({limit} downloads). Sign up for more or buy a plan!'}), 403
+    user = get_user_data(token_id=token, ip=ip)
+    user_data = user['data']
+    
+    if user_data['count'] >= DAILY_LIMIT:
+        return jsonify({'success': False, 'message': f'Daily limit reached ({DAILY_LIMIT} downloads). Login or come back tomorrow!'}), 403
 
     data = request.json
     url = data.get('url')
@@ -172,7 +248,9 @@ def handle_download():
     status, result = download_video(url)
     
     if status == "SUCCESS":
-        user_usage[ip] = usage + 1
+        # Apply reward
+        update_user_stats(user['uid'], 1, REWARD_PER_DOWNLOAD, user['is_guest'])
+        
         raw_thumb = result.get('thumbnail', '')
         proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
         
@@ -182,16 +260,17 @@ def handle_download():
             'filename': result['filename'],
             'title': result['title'],
             'thumbnail': proxy_thumb,
-            'remaining': limit - (usage + 1)
+            'remaining': DAILY_LIMIT - (user_data['count'] + 1),
+            'balance': round(user_data['balance'] + REWARD_PER_DOWNLOAD, 2)
         })
     elif status == "PENDING_GITHUB":
-        user_usage[ip] = usage + 1
-        # GitHub action update: we won't have metadata immediately
+        update_user_stats(user['uid'], 1, REWARD_PER_DOWNLOAD, user['is_guest'])
         return jsonify({
             'success': True, 
             'status': 'pending', 
             'job_id': result, 
-            'remaining': limit - (usage + 1), 
+            'remaining': DAILY_LIMIT - (user_data['count'] + 1),
+            'balance': round(user_data['balance'] + REWARD_PER_DOWNLOAD, 2),
             'message': 'Hugging Face is blocked. Switching to GitHub Backup...' 
         })
     else:
@@ -201,11 +280,21 @@ def handle_download():
 def check_limit():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
+    
     ip = get_remote_address()
-    is_signed_up = request.json.get('signed_up', False)
-    limit = 20 if is_signed_up else 10
-    usage = user_usage.get(ip, 0)
-    return jsonify({'usage': usage, 'limit': limit, 'remaining': max(0, limit - usage)})
+    auth_header = request.headers.get('Authorization')
+    token = auth_header.split('Bearer ')[1] if auth_header and 'Bearer ' in auth_header else None
+    
+    user = get_user_data(token_id=token, ip=ip)
+    user_data = user['data']
+    
+    return jsonify({
+        'usage': user_data['count'],
+        'limit': DAILY_LIMIT,
+        'remaining': max(0, DAILY_LIMIT - user_data['count']),
+        'balance': round(user_data['balance'], 2),
+        'is_guest': user['is_guest']
+    })
 
 @app.route('/proxy-img')
 def proxy_image():

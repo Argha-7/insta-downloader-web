@@ -124,6 +124,73 @@
 
             .btn-started:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4); }
 
+            .nav-wallet {
+                background: rgba(59, 130, 246, 0.1);
+                padding: 8px 15px;
+                border-radius: 50px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--primary);
+                font-weight: 700;
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                transition: all 0.3s ease;
+            }
+            .nav-wallet i { color: #facc15; }
+            .nav-wallet:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59,130,246,0.1); }
+            
+            .nav-cash {
+                background: rgba(34, 197, 94, 0.1);
+                border-color: rgba(34, 197, 94, 0.2);
+                color: #15803d;
+                font-weight: 800;
+            }
+            .nav-cash i { color: #22c55e !important; }
+
+            .user-profile {
+                display: none;
+                align-items: center;
+                gap: 10px;
+                background: white;
+                padding: 5px 15px 5px 5px;
+                border-radius: 50px;
+                border: 1px solid #e2e8f0;
+                cursor: pointer;
+            }
+            .user-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
+            .user-name { font-weight: 600; font-size: 0.9rem; color: #1e293b; }
+
+            .btn-login {
+                background: #1e293b;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 50px;
+                border: none;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: 0.3s;
+            }
+            .btn-login:hover { background: #000; transform: scale(1.05); }
+            .btn-login i { color: #facc15; }
+            
+            .btn-whatsapp {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                background: #25D366;
+                color: white;
+                padding: 12px 25px;
+                border-radius: 50px;
+                text-decoration: none;
+                font-weight: 600;
+                transition: 0.3s;
+                margin-top: 10px;
+            }
+            .btn-whatsapp:hover { background: #128C7E; transform: scale(1.05); }
+
             /* Hero Section */
             .hero {
                 padding: 100px 20px 140px;
@@ -635,12 +702,24 @@
             <a class='logo' href='/'>
                 <i class="fab fa-instagram"></i> InstaStream <span>AI</span>
             </a>
-            <div style="display: flex; gap: 30px; align-items: center;" class="nav-links">
-                <a href="#" style="text-decoration:none; color:var(--dark); font-weight:600;">Home</a>
-                <a href="#features" style="text-decoration:none; color:var(--dark); font-weight:600;">Features</a>
-                <a href="#pricing" style="text-decoration:none; color:var(--dark); font-weight:600;">Pricing</a>
+            <div style="display: flex; gap: 15px; align-items: center;" class="nav-links">
+                <div class="nav-wallet nav-cash" id="cashWallet" title="Earnings Wallet">
+                    <i class="fas fa-wallet"></i> ₹                    <span id="navBalance">0.00</span>
+                </div>
+                <div class="nav-wallet" id="limitWallet" title="Daily Downloads">
+                    <i class="fas fa-bolt"></i>
+                    <span id="navRemaining">10</span>
+                </div>
+
+                <button class="btn-login" id="loginBtn" onclick="loginWithGoogle()">
+                    <i class="fab fa-google"></i> Login
+                </button>
+
+                <div class="user-profile" id="userProfile" onclick="logout()">
+                    <img class="user-avatar" id="userAvatar" src=""/>
+                    <span class="user-name" id="userName">User</span>
+                </div>
             </div>
-            <a class='btn-started' href='#'>Get Started</a>
         </nav>
 
         <main class='hero animate'>
@@ -658,7 +737,7 @@
 
             <div class='limit-badge animate delay-2' id='limitBadge'>
                 <i class="fas fa-chart-line"></i>
-                <span id='limitText'>Loading limits...</span>
+                <span id='limitText'>Downloads Left: 10 / 10</span>
             </div>
 
             <div class='search-card animate' style='animation-delay: 0.6s;'>
@@ -706,10 +785,11 @@
                     <i class='fas fa-check-circle'></i> Conversion completed successfully! Use the download button above.
                 </div>
 
-                <div style="margin-top: 30px; padding: 20px; background: rgba(37, 211, 102, 0.1); border-radius: 20px; border: 1px dashed #25d366;">
-                    <p style="color:#065f46; font-weight:700; margin-bottom:10px;">Help your friends too! 😍</p>
-                    <a href="https://api.whatsapp.com/send?text=Hey! Find this amazing tool to download Instagram Reels in HD for free! 🔥 Check here: https://your-blogger-url.blogspot.com" class="btn-whatsapp" target="_blank">
-                        <i class="fab fa-whatsapp"></i> Share on WhatsApp
+                <div style="margin-top: 30px; padding: 25px; background: rgba(37, 211, 102, 0.08); border-radius: 20px; border: 1px dashed #25D366; text-align: center;">
+                    <h3 style="color:#065f46; margin-bottom:10px; font-size:1.2rem;">😍 Low on Points?</h3>
+                    <p style="color:#1e293b; margin-bottom:20px;">Share this tool with friends on WhatsApp and get <b>+20 Bonus Points</b> instantly!</p>
+                    <a href="https://api.whatsapp.com/send?text=Hey! Found this amazing tool to download Instagram Reels in HD for free! 🔥 Check here: https://argha-7.blogspot.com" class="btn-whatsapp" onclick="claimReward()" target="_blank">
+                        <i class="fab fa-whatsapp"></i> Share & Earn +20
                     </a>
                 </div>
             </div>
@@ -901,6 +981,26 @@
         <a href="https://api.whatsapp.com/send?text=Check out this awesome Instagram Downloader!" class="float-share" target="_blank">
             <i class="fab fa-whatsapp"></i> Tell a Friend
         </a>
+        <title>InstaStream AI | Premium Instagram Downloader</title>
+        <!-- Firebase SDK (v9+ Compatibility) -->
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+        <script>
+        // CONFIG: Replace with your Firebase settings
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        </script>
 
         <script>
             // Hiding API and Secrets from simple inspection
@@ -1027,6 +1127,9 @@
                 document.getElementById('resThumb').src = data.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png";
                 document.getElementById('downloadLink').href = `${API_BASE}/files/${data.filename}`;
                 
+                // Refresh limits
+                if(typeof updateLimits === 'function') updateLimits();
+                
                 resetBtn();
             }
 
@@ -1053,55 +1156,102 @@
             let mouseY = window.innerHeight / 2;
             let auraX = mouseX, auraY = mouseY;
 
-            // Limit Logic
-            function isUserSignedUp() {
-                return localStorage.getItem('insta_signed_up') === 'true';
+            // 4. Firebase & Identity Logic
+            let currentUser = null;
+            let currentToken = null;
+
+            async function getSecureHeaders() {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-App-Secret': APP_SECRET
+                };
+                if (currentToken) {
+                    headers['Authorization'] = `Bearer ${currentToken}`;
+                }
+                return headers;
             }
 
-            async function updateLimits() {
-                const signedUp = isUserSignedUp();
+            async function loginWithGoogle() {
+                const provider = new firebase.auth.GoogleAuthProvider();
                 try {
+                    await auth.signInWithPopup(provider);
+                } catch (error) {
+                    console.error("Login failed:", error);
+                }
+            }
+
+            function logout() {
+                if(confirm("Logout from InstaStream AI?")) auth.signOut();
+            }
+
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    currentToken = await user.getIdToken();
+                    
+                    document.getElementById('loginBtn').style.display = 'none';
+                    document.getElementById('userProfile').style.display = 'flex';
+                    document.getElementById('userAvatar').src = user.photoURL;
+                    document.getElementById('userName').innerText = user.displayName.split(' ')[0];
+                } else {
+                    currentUser = null;
+                    currentToken = null;
+                    document.getElementById('loginBtn').style.display = 'flex';
+                    document.getElementById('userProfile').style.display = 'none';
+                }
+                updateLimits();
+            });
+
+            // Limit & Usage Logic
+            async function updateLimits() {
+                try {
+                    const headers = await getSecureHeaders();
                     const res = await fetch(`${API_BASE}/check-limit`, {
                         method: 'POST',
-                        headers: getSecureHeaders(),
-                        body: JSON.stringify({ signed_up: signedUp })
+                        headers: headers,
+                        body: JSON.stringify({})
                     });
                     const data = await res.json();
-                    document.getElementById('limitText').innerText = `Downloads Left: ${data.remaining} / ${data.limit}`;
                     
-                    if (data.remaining <= 0 && !signedUp) {
-                        setTimeout(() => { document.getElementById('signupModal').style.display = 'flex'; }, 2000);
+                    document.getElementById('navRemaining').innerText = data.remaining;
+                    document.getElementById('navBalance').innerText = data.balance.toFixed(2);
+                    
+                    const badgeText = data.is_guest ? 
+                        `Guest Reward: ₹${data.balance.toFixed(2)} (Login to save)` : 
+                        `Current Balance: ₹${data.balance.toFixed(2)}`;
+                    
+                    document.getElementById('limitText').innerText = badgeText;
+                    
+                    if (data.remaining <= 0) {
+                        document.getElementById('limitWallet').style.background = 'rgba(239, 68, 68, 0.1)';
+                    } else {
+                        document.getElementById('limitWallet').style.background = 'rgba(59, 130, 246, 0.1)';
                     }
                 } catch (e) {
-                    document.getElementById('limitText').innerText = "Usage limit may apply";
+                    console.error("Limit fetch failed");
                 }
             }
-
-            function simulatedSignup() {
-                const email = document.getElementById('signupEmail').value;
-                if (!email.includes('@')) { alert('Please enter valid email'); return; }
-                localStorage.setItem('insta_signed_up', 'true');
-                closeModal();
-                updateLimits();
-                alert('Success! You now have 20 daily downloads.');
+                // Short delay to ensure they click the link
+                setTimeout(async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/reward-share`, {
+                            method: 'POST',
+                            headers: getSecureHeaders(),
+                            body: JSON.stringify({})
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            updateCredits();
+                            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                            alert(data.message);
+                        }
+                    } catch (e) {
+                        console.error("Reward failed");
+                    }
+                }, 2000);
             }
 
-            function closeModal() {
-                document.getElementById('signupModal').style.display = 'none';
-            }
-
-            // Replace startDownload Fetch to include signup status
-            const originalFetch = window.fetch;
-            window.fetch = function() {
-                if (arguments[0].includes('/download') && arguments[1] && arguments[1].body) {
-                    const body = JSON.parse(arguments[1].body);
-                    body.signed_up = isUserSignedUp();
-                    arguments[1].body = JSON.stringify(body);
-                }
-                return originalFetch.apply(this, arguments);
-            };
-
-            updateLimits();
+            updateCredits();
 
             // --- INTERACTIVE FEATURES: TYPING & PARTICLES ---
 
@@ -1167,45 +1317,64 @@
                     this.density = (Math.random() * 30) + 15;
                     this.alpha = Math.random() * 0.4 + 0.1;
 
-                    // Constant Jitter / Drift velocity
                     this.vX = (Math.random() - 0.5) * 0.8;
                     this.vY = (Math.random() - 0.5) * 0.8;
+                    
+                    // Transformation Properties
+                    this.stretch = 1;
+                    this.angle = 0;
+                    this.isInner = false;
                 }
                 update() {
-                    // 1. Constant Jitter & Drift (Motion 'idher udher')
+                    // 1. Constant Jitter & Drift
                     this.baseX += this.vX;
                     this.baseY += this.vY;
-                    
-                    // Wrap around screen
                     if (this.baseX < 0) this.baseX = canvas.width;
                     if (this.baseX > canvas.width) this.baseX = 0;
                     if (this.baseY < 0) this.baseY = canvas.height;
                     if (this.baseY > canvas.height) this.baseY = 0;
 
-                    // 2. Interaction with mouse (Magnetic Repel)
+                    // 2. Interaction & Stretch Logic
                     let dx = mouseX - this.x;
                     let dy = mouseY - this.y;
                     let distance = Math.sqrt(dx*dx + dy*dy);
-                    let maxDistance = 180;
+                    let maxDistance = 200;
+
+                    // Color Shift Logic (Inner = Black)
+                    this.isInner = distance < 80;
 
                     if (distance < maxDistance) {
                         let force = (maxDistance - distance) / maxDistance;
                         let directionX = (dx / distance) * force * this.density;
                         let directionY = (dy / distance) * force * this.density;
+                        
                         this.x -= directionX;
                         this.y -= directionY;
+                        
+                        // Stretch & Compress Logic
+                        this.angle = Math.atan2(dy, dx);
+                        this.stretch = 1 + (force * 2.5); // Elongate based on force
                     } else {
-                        // Return to animated drift position (snappy return)
                         this.x -= (this.x - this.baseX) / 10;
                         this.y -= (this.y - this.baseY) / 10;
+                        this.stretch = 1; // Return to circle
                     }
                 }
                 draw() {
-                    ctx.fillStyle = this.color;
-                    ctx.globalAlpha = this.alpha;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.angle);
+                    
+                    // Draw Color based on distance
+                    ctx.fillStyle = this.isInner ? "#000000" : this.color;
+                    ctx.globalAlpha = this.isInner ? 0.9 : this.alpha;
+                    
                     ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    // Stretch along X axis
+                    ctx.ellipse(0, 0, this.size * this.stretch, this.size / Math.sqrt(this.stretch), 0, 0, Math.PI * 2);
                     ctx.fill();
+                    
+                    ctx.restore();
                     ctx.globalAlpha = 1;
                 }
             }
