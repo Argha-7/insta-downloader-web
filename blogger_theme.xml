@@ -207,6 +207,42 @@
                 pointer-events: none;
             }
 
+            /* --- Custom Aura Cursor --- */
+            .cursor-point {
+                width: 6px;
+                height: 6px;
+                background: var(--primary);
+                border-radius: 50%;
+                position: fixed;
+                pointer-events: none;
+                z-index: 10000;
+                transition: transform 0.1s;
+            }
+
+            .cursor-aura {
+                width: 40px;
+                height: 40px;
+                background: rgba(59, 130, 246, 0.2);
+                border: 2px solid rgba(59, 130, 246, 0.4);
+                border-radius: 50%;
+                position: fixed;
+                pointer-events: none;
+                z-index: 9999;
+                transition: width 0.3s, height 0.3s, background 0.3s, border 0.3s;
+                transform: translate(-50%, -50%);
+            }
+
+            .cursor-aura.hover {
+                width: 80px;
+                height: 80px;
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid var(--primary);
+            }
+
+            @media (max-width: 1024px) {
+                .cursor-point, .cursor-aura { display: none; }
+            }
+
             .search-card input {
                 flex: 1;
                 border: none;
@@ -590,7 +626,9 @@
             }
         </style>
     </head>
-    <body>
+    <body style='cursor: none;'>
+        <div class='cursor-point' id='cursor-point'></div>
+        <div class='cursor-aura' id='cursor-aura'></div>
         <canvas id='particle-canvas'></canvas>
         <nav class='navbar'>
             <a class='logo' href='/'>
@@ -1141,6 +1179,35 @@
                 requestAnimationFrame(animate);
             }
             animate();
+
+            // 3. Aura Cursor Easing Logic
+            const point = document.getElementById('cursor-point');
+            const aura = document.getElementById('cursor-aura');
+            let mouseX = 0, mouseY = 0;
+            let auraX = 0, auraY = 0;
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                point.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+            });
+
+            function updateAura() {
+                // Smooth easing (lerp)
+                auraX += (mouseX - auraX) * 0.15;
+                auraY += (mouseY - auraY) * 0.15;
+                aura.style.left = auraX + 'px';
+                aura.style.top = auraY + 'px';
+                requestAnimationFrame(updateAura);
+            }
+            updateAura();
+
+            // Hover interactions
+            const interactives = document.querySelectorAll('button, a, input, .f-card, .p-card');
+            interactives.forEach(el => {
+                el.addEventListener('mouseenter', () => aura.classList.add('hover'));
+                el.addEventListener('mouseleave', () => aura.classList.remove('hover'));
+            });
         </script>
 </body>
 </html>
