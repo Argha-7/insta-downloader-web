@@ -1172,7 +1172,7 @@
                     let distance = Math.sqrt(dx*dx + dy*dy);
                     let forceDirectionX = dx / distance;
                     let forceDirectionY = dy / distance;
-                    let maxDistance = 150;
+                    let maxDistance = 200;
                     let force = (maxDistance - distance) / maxDistance;
                     let directionX = forceDirectionX * force * this.density;
                     let directionY = forceDirectionY * force * this.density;
@@ -1204,8 +1204,8 @@
 
             function initParticles() {
                 particles = [];
-                // More particles for a richer effect
-                const count = (canvas.width * canvas.height) / 8000;
+                // Dramatically increase particle density
+                const count = (canvas.width * canvas.height) / 2500;
                 for (let i = 0; i < count; i++) {
                     particles.push(new Particle());
                 }
