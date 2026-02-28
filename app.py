@@ -156,7 +156,7 @@ def trigger_github_action(video_url, job_id):
     # Current Space URL for callback
     space_name = os.environ.get('SPACE_ID', '')
     if space_name:
-        callback_url = f"https://{space_name.replace('/', '-')}.hf.space/github-callback?job_id={job_id}"
+        callback_url = f"https://{space_name.lower().replace('/', '-')}.hf.space/github-callback?job_id={job_id}"
     else:
         # Fallback for local testing (won't work for callback but for trigger)
         callback_url = ""
@@ -181,7 +181,7 @@ def trigger_github_action(video_url, job_id):
         print(f"GitHub Trigger Exception: {e}")
         return False
 
-def download_video(url):
+def download_video(url, current_job_id=None):
     """Main download logic with local-first, then GitHub failover."""
     if '?' in url:
         url = url.split('?')[0]
@@ -201,11 +201,10 @@ def download_video(url):
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            print(f"Starting local download for {url}...")
             info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
-            if os.path.exists(filename):
-                return "SUCCESS", {
-                    'filename': os.path.basename(filename),
+            return "SUCCESS", {
+                    'filename': os.path.basename(info['requested_downloads'][0]['filepath']),
                     'title': info.get('title', 'Instagram Video'),
                     'thumbnail': info.get('thumbnail', '')
                 }
@@ -215,10 +214,10 @@ def download_video(url):
         
         # 2. Trigger GitHub Actions if blocked
         if "403" in err_str or "Forbidden" in err_str or "address associated" in err_str:
-            job_id = str(uuid.uuid4())
-            job_status[job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
-            if trigger_github_action(url, job_id):
-                return "PENDING_GITHUB", job_id
+            if not current_job_id: current_job_id = str(uuid.uuid4())
+            job_status[current_job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
+            if trigger_github_action(url, current_job_id):
+                return "PENDING_GITHUB", current_job_id
         
         return "FAILED", f"Error: {err_str[:100]}"
 
@@ -253,7 +252,7 @@ def handle_download():
     update_user_stats(user['uid'], 1, REWARD_PER_DOWNLOAD, user['is_guest'])
 
     def run_download_task(target_url, j_id):
-        status, result = download_video(target_url)
+        status, result = download_video(target_url, j_id)
         if status == "SUCCESS":
             raw_thumb = result.get('thumbnail', '')
             # Try to build proxy URL if request context is available
