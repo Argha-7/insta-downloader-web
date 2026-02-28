@@ -243,6 +243,8 @@ def handle_download():
     data = request.json
     url = data.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
+    # Extract host_url before thread starts
+    host_url = request.host_url
     
     # Generate Job ID and start background thread
     job_id = str(uuid.uuid4())
@@ -251,13 +253,12 @@ def handle_download():
     # Reward for starting a job
     update_user_stats(user['uid'], 1, REWARD_PER_DOWNLOAD, user['is_guest'])
 
-    def run_download_task(target_url, j_id):
+    def run_download_task(target_url, j_id, h_url):
         status, result = download_video(target_url, j_id)
         if status == "SUCCESS":
             raw_thumb = result.get('thumbnail', '')
-            # Try to build proxy URL if request context is available
             try:
-                proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
+                proxy_thumb = f"{h_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
             except:
                 proxy_thumb = raw_thumb
             
@@ -275,7 +276,7 @@ def handle_download():
             
     # Start thread
     import threading
-    thread = threading.Thread(target=run_download_task, args=(url, job_id))
+    thread = threading.Thread(target=run_download_task, args=(url, job_id, host_url))
     thread.daemon = True
     thread.start()
     
