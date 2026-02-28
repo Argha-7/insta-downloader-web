@@ -76,8 +76,7 @@ def download_video(url):
             'max_filesize': 100 * 1024 * 1024,
             'nocheckcertificate': True,
             'ignoreerrors': False,
-            'socket_timeout': 40, # High timeout for slow DNS
-            'noproxy': True,      # Avoid broken system proxies
+            'socket_timeout': 60, # Increased timeout for slow DNS resolution
             
             'http_headers': {
                 'User-Agent': config['user_agent'],

@@ -1,0 +1,36 @@
+name: Emergency Video Downloader
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'Instagram Reel/Video URL'
+        required: true
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install yt-dlp
+
+      - name: Download Video
+        run: |
+          mkdir -p output
+          python -m yt_dlp "${{ github.event.inputs.video_url }}" -o "output/%(title)s.%(ext)s"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: downloaded-video
+          path: output/
