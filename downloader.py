@@ -6,10 +6,16 @@ def download_instagram_video(url, output_path='.'):
     Downloads an Instagram video using yt-dlp.
     """
     ydl_opts = {
-        'format': 'best',
+        # 'b[ext=mp4]/b' ensures a single file with both video and audio.
+        # This prevents the "merging formats" error when ffmpeg is missing.
+        'format': 'b[ext=mp4]/b',
         'outtmpl': os.path.join(output_path, '%(title)s_%(id)s.%(ext)s'),
         'quiet': False,
         'no_warnings': False,
+        'nocheckcertificate': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        }
     }
 
     try:

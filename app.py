@@ -43,23 +43,30 @@ def download_video(url):
     if '?' in url:
         url = url.split('?')[0]
     
-    # Very Robust yt-dlp options
+    # Very Robust yt-dlp options for local (no ffmpeg) and server
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        # 'b[ext=mp4]/b' guarantees a single file with both video and audio
+        # This avoids the "merging formats" error when ffmpeg is missing
+        'format': 'b[ext=mp4]/b', 
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, 'insta_%(id)s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
         'noplaylist': True,
-        'merge_output_format': 'mp4',
         'max_filesize': 100 * 1024 * 1024,
         'nocheckcertificate': True,
         'ignoreerrors': False,
-        'source_address': '0.0.0.0', # Force IPv4 (Crucial for some DNS/Network issues)
-        'socket_timeout': 30, # Longer timeout
+        'source_address': '0.0.0.0', 
+        'socket_timeout': 30,
+        
+        # De-active any post-processing that might need ffmpeg
+        'no_post_overwrites': True,
+        'writethumbnail': False,
+        'write_all_thumbnails': False,
+        'postprocessors': [],
         
         # Authentic Headers
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Referer': 'https://www.instagram.com/',
@@ -72,18 +79,16 @@ def download_video(url):
     }
     
     try:
-        # Log the URL being processed (shows in HF logs)
         print(f"Processing URL: {url}")
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # First extract info
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
             
-            # Merged file check (sometimes extension changes to .mp4 automatically)
+            # Extension check
             if not os.path.exists(filename):
                 base = os.path.splitext(filename)[0]
-                for ext in ['mp4', 'mkv', 'webm']:
+                for ext in ['mp4', 'mkv', 'webm', '3gp']:
                     alt_path = f"{base}.{ext}"
                     if os.path.exists(alt_path):
                         filename = alt_path
@@ -92,22 +97,22 @@ def download_video(url):
             if os.path.exists(filename):
                 return True, os.path.basename(filename)
             else:
-                return False, "Error: File created but disappeared. Storage issue?"
+                return False, "Error: File downloaded but not found on disk."
                 
     except Exception as e:
         err_str = str(e)
         print(f"CRITICAL ERROR: {err_str}")
         
+        if "ffmpeg" in err_str.lower():
+            return False, "Error: FFmpeg is missing. Please install FFmpeg on your PC for HD downloads."
         if "Private" in err_str:
             return False, "This video is Private. We can't download it."
         if "login" in err_str:
             return False, "Instagram is asking for Login. Try again or check the link."
         if "403" in err_str:
             return False, "Instagram is blocking this server IP. Try again later."
-        if "429" in err_str:
-            return False, "Too many requests. Please wait a few minutes."
         if "address associated" in err_str:
-            return False, "Network/DNS Error: Hugging Face server can't reach Instagram. Try again in 2-3 minutes."
+            return False, "Network/DNS Error: Server can't reach Instagram."
             
         return False, f"Download failed: {err_str[:80]}..."
 

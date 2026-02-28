@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html b:css='false' b:defaultwidgetversion='2' b:layoutsversion='3'
+    xmlns='http://www.w3.org/1999/xhtml'
+    xmlns:b='http://www.google.com/gastrouts'
+    xmlns:data='http://www.google.com/schema/data'
+    xmlns:expr='http://www.google.com/gastrouts/expressions'>
+    <head>
+        <meta charset='UTF-8'/>
+        <meta content='width=device-width, initial-scale=1.0' name='viewport'/>
+        <title>
+            <data:blog.pageTitle/>
+        </title>
+
+        <link href='https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;display=swap' rel='stylesheet'/>
+
+        <b:skin><![CDATA[
+    /* Blogger Required Skin */
+    ]]>        </b:skin>
+
+        <style>
+    /* -------------------------------------
+       Publer-Style Premium Blogger Theme
+       Fix: Using direct style tag for reliability
+    ---------------------------------------- */
+    :root {
+        --primary: #00BFB2;
+        --dark: #0F2E47;
+        --bg: #FAFBFC;
+        --white: #FFFFFF;
+        --border: #E5E7EB;
+        --text-muted: #6B7280;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg);
+        color: var(--dark);
+        font-family: 'DM Sans', sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Navbar */
+    .navbar {
+        background: var(--white);
+        padding: 1rem 5%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--dark);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 30px;
+    }
+
+    .nav-links a {
+        color: var(--dark);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .nav-auth {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .btn-login {
+        color: var(--dark);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .btn-started {
+        background: var(--primary);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-started:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 191, 178, 0.3);
+    }
+
+    /* Main Section */
+    .hero {
+        text-align: center;
+        padding: 100px 20px;
+        background: var(--bg);
+        min-height: 60vh;
+    }
+
+    .hero h1 {
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        margin-bottom: 1rem;
+        font-weight: 700;
+        color: var(--dark);
+        letter-spacing: -1px;
+    }
+
+    .hero p {
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        margin-bottom: 4rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Input Bar */
+    .search-box {
+        max-width: 850px;
+        margin: 0 auto;
+        background: var(--white);
+        padding: 12px;
+        border-radius: 16px;
+        display: flex;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.06);
+        border: 1px solid var(--border);
+        transition: 0.3s;
+    }
+
+    .search-box:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 20px 60px rgba(0, 191, 178, 0.1);
+    }
+
+    .search-box input {
+        flex: 1;
+        border: none;
+        padding: 18px 30px;
+        font-size: 1.15rem;
+        outline: none;
+        background: transparent;
+        color: var(--dark);
+    }
+
+    .btn-download {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 0 45px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .btn-download:hover { filter: brightness(1.05); transform: scale(1.02); }
+    .btn-download:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Floating Social Sidebar */
+    .floating-social {
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        z-index: 999;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+    }
+
+    .social-icon {
+        width: 45px;
+        height: 45px;
+        line-height: 45px;
+        text-align: center;
+        color: white;
+        text-decoration: none;
+        font-size: 1.1rem;
+        font-weight: bold;
+        transition: 0.2s;
+    }
+
+    .social-icon:hover { transform: translateX(5px); }
+    .icon-fb { background: #1877F2; }
+    .icon-tw { background: #000000; }
+    .icon-in { background: #0A66C2; }
+    .icon-ig { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
+
+    /* Status Box */
+    #stat {
+        max-width: 850px;
+        margin: 30px auto;
+        padding: 18px;
+        border-radius: 12px;
+        display: none;
+        text-align: center;
+        font-weight: 500;
+        animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown { from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:translateY(0);} }
+    .ok { background: #ECFDF5; color: #059669; border: 1px solid #10B981; }
+    .err { background: #FEF2F2; color: #DC2626; border: 1px solid #EF4444; }
+
+    /* Footer Meta */
+    .meta-links {
+        margin-top: 60px;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
+    .meta-links a { color: var(--primary); text-decoration: none; font-weight: 600; }
+    .meta-links a:hover { text-decoration: underline; }
+
+    /* Floating FAB */
+    .fab {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        width: 65px;
+        height: 65px;
+        background: var(--primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        box-shadow: 0 12px 30px rgba(0, 191, 178, 0.4);
+        cursor: pointer;
+        z-index: 1000;
+        transition: 0.3s;
+    }
+    .fab:hover { transform: scale(1.1); filter: brightness(1.1); }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .nav-links, .nav-auth { display: none; }
+        .hero { padding: 60px 20px; }
+        .hero h1 { font-size: 2.2rem; }
+        .search-box { flex-direction: column; padding: 10px; gap: 10px; }
+        .btn-download { padding: 15px; }
+        .floating-social { display: none; }
+    }
+        </style>
+    </head>
+    <body>
+        <nav class='navbar'>
+            <a class='logo' href='/'>
+                <svg height='32' viewBox='0 0 24 24' width='32'
+                    xmlns='http://www.w3.org/2000/svg'>
+                    <path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='var(--primary)'/>
+                </svg>
+            InstaStream
+            </a>
+            <div class='nav-links'>
+                <a href='#'>Features</a>
+                <a href='#'>Free Tools</a>
+                <a href='#'>Pricing</a>
+            </div>
+            <div class='nav-auth'>
+                <a class='btn-login' href='#'>Log in</a>
+                <a class='btn-started' href='#'>Get started</a>
+            </div>
+        </nav>
+
+        <div class='floating-social'>
+            <a class='social-icon icon-fb' href='#' title='Facebook'>f</a>
+            <a class='social-icon icon-tw' href='#' title='Twitter'>X</a>
+            <a class='social-icon icon-in' href='#' title='LinkedIn'>in</a>
+            <a class='social-icon icon-ig' href='#' title='Instagram'>IG</a>
+        </div>
+
+        <main class='hero'>
+            <h1>Download Instagram Reels</h1>
+            <p>Paste the URL of the Instagram reel and press to download in HD quality</p>
+
+            <div class='search-box'>
+                <input id='igUrl' placeholder='Paste Instagram link here...' type='text'/>
+                <button class='btn-download' id='igBtn' onclick='handlePipe()'>Download</button>
+            </div>
+
+            <div id='stat'></div>
+
+            <div class='meta-links'>
+                <p>No ads. No watermarks. No registration.</p>
+                <p>But if you like this tool, you can always <a href='#'>buy us a coffee ☕</a>
+                </p>
+                <p>Issues? <a href='#'>Contact us</a>
+                </p>
+                <p style='margin-top:25px; font-weight:700; color: var(--dark);'>Works instantly on mobile, desktop, and all browsers.</p>
+            </div>
+        </main>
+
+        <div class='fab' title='Support'>
+            <svg height='32' viewBox='0 0 24 24' width='32'
+                xmlns='http://www.w3.org/2000/svg'>
+                <path d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z' fill='white'/>
+            </svg>
+        </div>
+
+        <script>
+        const API_URL = "https://argha-7-insta-downloader-web.hf.space";
+
+        async function handlePipe() {
+            const inp = document.getElementById('igUrl');
+            const btn = document.getElementById('igBtn');
+            const log = document.getElementById('stat');
+
+            const val = inp.value.trim();
+            if(!val) return;
+
+            log.style.display = 'none';
+            btn.disabled = true;
+            btn.innerText = 'Processing...';
+
+            try {
+                const res = await fetch(`${API_URL}/download`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: val })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    show("Success! Downloading your video...", "ok");
+                    window.location.href = `${API_URL}/files/${data.filename}`;
+                    inp.value = "";
+                } else {
+                    show("Error: " + data.message, "err");
+                }
+            } catch (e) {
+                show("Backend Space is sleeping. Please wake it up.", "err");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Download';
+            }
+        }
+
+        function show(m, c) {
+            const log = document.getElementById('stat');
+            log.innerText = m;
+            log.className = c;
+            log.style.display = 'block';
+        }
+        </script>
+    </body>
+</html>
