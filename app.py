@@ -39,27 +39,65 @@ def cleanup_files():
 threading.Thread(target=cleanup_files, daemon=True).start()
 
 def download_video(url):
-    # Sanitize URL or add timeout for production
+    # Clean the URL to remove UTM parameters which can sometimes cause issues
+    if '?' in url:
+        url = url.split('?')[0]
+        
     ydl_opts = {
-        'format': 'best',
+        # Try to get best MP4 available, or best overall
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, 'insta_%(id)s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
-        'max_filesize': 50 * 1024 * 1024, # Limit to 50MB
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'referer': 'https://www.instagram.com/',
-        'add_header': [
-            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            'Accept-Language: en-US,en;q=0.9',
-        ],
+        'noplaylist': True,
+        'merge_output_format': 'mp4',
+        'max_filesize': 100 * 1024 * 1024, # 100MB limit
+        # Robust headers to bypass bot detection
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Sec-Fetch-Mode': 'navigate',
+        },
+        'extractor_args': {
+            'instagram': {
+                'allow_anon_user_id': ['1'],
+            }
+        },
     }
+    
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # First extract info
             info = ydl.extract_info(url, download=True)
+            # Get the path of the downloaded file
             filename = ydl.prepare_filename(info)
-            return True, os.path.basename(filename)
+            
+            # If the format was merged, filename might end in .mp4 even if outtmpl was generic
+            if not os.path.exists(filename):
+                # Check for alternative extensions if merge happened
+                base = os.path.splitext(filename)[0]
+                for ext in ['mp4', 'mkv', 'webm']:
+                    alt_path = f"{base}.{ext}"
+                    if os.path.exists(alt_path):
+                        filename = alt_path
+                        break
+            
+            if os.path.exists(filename):
+                return True, os.path.basename(filename)
+            else:
+                return False, "File was processed but not found."
+                
     except Exception as e:
-        return False, "Failed to download. Make sure the URL is public."
+        err_str = str(e)
+        print(f"CRITICAL ERROR: {err_str}") # Shows in Hugging Face Logs
+        
+        if "Private" in err_str or "login" in err_str:
+            return False, "Error: This content is private or requires login."
+        if "429" in err_str:
+            return False, "Error: Too many requests. Try again later."
+            
+        return False, f"Download failed. Instagram might be blocking our server. Try again in a few minutes."
 
 @app.route('/')
 def index():
