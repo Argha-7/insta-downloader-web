@@ -1170,8 +1170,21 @@
                     this.color = colors[Math.floor(Math.random() * colors.length)];
                     this.density = (Math.random() * 40) + 15;
                     this.alpha = Math.random() * 0.7 + 0.3;
+                    
+                    // Continuous motion offset
+                    this.randomOffset = Math.random() * 1000;
+                    this.floatSpeed = 0.001 + Math.random() * 0.002;
+                    this.amplitude = 5 + Math.random() * 15;
                 }
                 update() {
+                    // Continuous 'Breathing' / Floating Motion
+                    const time = Date.now() * this.floatSpeed + this.randomOffset;
+                    const driftX = Math.sin(time) * this.amplitude;
+                    const driftY = Math.cos(time * 0.8) * this.amplitude;
+                    
+                    const targetX = this.baseX + driftX;
+                    const targetY = this.baseY + driftY;
+
                     // Interaction with mouse (Magnetic Repel)
                     let dx = mouseX - this.x;
                     let dy = mouseY - this.y;
@@ -1185,13 +1198,9 @@
                         this.x -= directionX;
                         this.y -= directionY;
                     } else {
-                        // Smoothly elastic return to base
-                        if (this.x !== this.baseX) {
-                            this.x -= (this.x - this.baseX) / 15;
-                        }
-                        if (this.y !== this.baseY) {
-                            this.y -= (this.y - this.baseY) / 15;
-                        }
+                        // Smoothly elastic return to the animated target position
+                        this.x -= (this.x - targetX) / 20;
+                        this.y -= (this.y - targetY) / 20;
                     }
                 }
                 draw() {
