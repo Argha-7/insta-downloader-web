@@ -43,78 +43,93 @@ def download_video(url):
     if '?' in url:
         url = url.split('?')[0]
     
-    # Very Robust yt-dlp options for local (no ffmpeg) and server
-    ydl_opts = {
-        # 'b[ext=mp4]/b' guarantees a single file with both video and audio
-        # This avoids the "merging formats" error when ffmpeg is missing
-        'format': 'b[ext=mp4]/b', 
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, 'insta_%(id)s.%(ext)s'),
-        'quiet': True,
-        'no_warnings': True,
-        'noplaylist': True,
-        'max_filesize': 100 * 1024 * 1024,
-        'nocheckcertificate': True,
-        'ignoreerrors': False,
-        'source_address': '0.0.0.0', 
-        'socket_timeout': 30,
-        
-        # De-active any post-processing that might need ffmpeg
-        'no_post_overwrites': True,
-        'writethumbnail': False,
-        'write_all_thumbnails': False,
-        'postprocessors': [],
-        
-        # Authentic Headers
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://www.instagram.com/',
+    # Triple-Attempt Strategy: Desktop, Mobile, and Stealth
+    attempts = [
+        # Attempt 1: Desktop Chrome (Standard)
+        {
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            'proxy': None,
         },
-        'extractor_args': {
-            'instagram': {
-                'allow_anon_user_id': ['1'],
-            }
+        # Attempt 2: Mobile Safari (iPhone) - Often has different rate limits
+        {
+            'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+            'proxy': None,
         },
-    }
+        # Attempt 3: Stealth Mode (No Proxy, No DNS cache)
+        {
+            'user_agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'proxy': None,
+        }
+    ]
+
+    last_error = ""
     
-    try:
-        print(f"Processing URL: {url}")
+    for i, config in enumerate(attempts):
+        print(f"Download Attempt {i+1} for: {url}")
         
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
+        ydl_opts = {
+            'format': 'b[ext=mp4]/b', 
+            'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'insta_{int(time.time())}_%(id)s.%(ext)s'),
+            'quiet': True,
+            'no_warnings': True,
+            'noplaylist': True,
+            'max_filesize': 100 * 1024 * 1024,
+            'nocheckcertificate': True,
+            'ignoreerrors': False,
+            'socket_timeout': 40, # High timeout for slow DNS
+            'noproxy': True,      # Avoid broken system proxies
             
-            # Extension check
-            if not os.path.exists(filename):
-                base = os.path.splitext(filename)[0]
-                for ext in ['mp4', 'mkv', 'webm', '3gp']:
-                    alt_path = f"{base}.{ext}"
-                    if os.path.exists(alt_path):
-                        filename = alt_path
-                        break
-            
-            if os.path.exists(filename):
-                return True, os.path.basename(filename)
-            else:
-                return False, "Error: File downloaded but not found on disk."
+            'http_headers': {
+                'User-Agent': config['user_agent'],
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.instagram.com/',
+            },
+            'extractor_args': {
+                'instagram': {
+                    'allow_anon_user_id': ['1'],
+                }
+            },
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                filename = ydl.prepare_filename(info)
                 
-    except Exception as e:
-        err_str = str(e)
-        print(f"CRITICAL ERROR: {err_str}")
+                # Verify file exists (sometimes extension is changed)
+                if not os.path.exists(filename):
+                    base = os.path.splitext(filename)[0]
+                    for ext in ['mp4', 'mkv', 'webm', '3gp']:
+                        alt_path = f"{base}.{ext}"
+                        if os.path.exists(alt_path):
+                            filename = alt_path
+                            break
+                
+                if os.path.exists(filename):
+                    print(f"Success on Attempt {i+1}!")
+                    return True, os.path.basename(filename)
+                    
+        except Exception as e:
+            last_error = str(e)
+            print(f"Attempt {i+1} failed: {last_error}")
+            # Wait a second before retrying
+            time.sleep(1)
+            continue
+
+    # Final error mapping
+    print(f"ALL ATTEMPTS FAILED. Final Error: {last_error}")
+    
+    if "Private" in last_error:
+        return False, "This content is Private and cannot be downloaded."
+    if "429" in last_error:
+        return False, "Instagram is rate-limiting us. Try again in 5 minutes."
+    if "403" in last_error or "Forbidden" in last_error:
+        return False, "Instagram is blocking this server IP. This happens on Hugging Face sometimes. Try a different link."
+    if "address associated" in last_error:
+        return False, "Network/DNS Error: Server cannot reach Instagram right now. Please wait 2 minutes."
         
-        if "ffmpeg" in err_str.lower():
-            return False, "Error: FFmpeg is missing. Please install FFmpeg on your PC for HD downloads."
-        if "Private" in err_str:
-            return False, "This video is Private. We can't download it."
-        if "login" in err_str:
-            return False, "Instagram is asking for Login. Try again or check the link."
-        if "403" in err_str:
-            return False, "Instagram is blocking this server IP. Try again later."
-        if "address associated" in err_str:
-            return False, "Network/DNS Error: Server can't reach Instagram."
-            
-        return False, f"Download failed: {err_str[:80]}..."
+    return False, f"Download failed. Try a different link or wait a few minutes."
 
 @app.route('/')
 def index():
