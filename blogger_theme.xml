@@ -347,6 +347,43 @@
                 color: #64748b;
             }
 
+            /* Floating Share Button */
+            .float-share {
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                background: #25d366;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 50px;
+                box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+                text-decoration: none;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                z-index: 999;
+                transition: 0.3s;
+                animation: float 3s ease-in-out infinite;
+            }
+
+            .float-share:hover { transform: scale(1.1); background: #128c7e; }
+
+            .btn-whatsapp {
+                background: #25d366;
+                color: white;
+                padding: 12px 25px;
+                border-radius: 15px;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 600;
+                margin-top: 15px;
+                transition: 0.3s;
+            }
+            .btn-whatsapp:hover { background: #128c7e; }
+
             @media (max-width: 768px) {
                 .navbar { padding: 1rem 5%; }
                 .search-card { flex-direction: column; height: auto; padding: 10px; }
@@ -409,6 +446,13 @@
                     <i class='fas fa-circle-check'></i> Download Video
                 </a>
                 <p style="margin-top: 20px; color: #64748b;">Downloaded successfully! ✅</p>
+
+                <div style="margin-top: 30px; padding: 20px; background: rgba(37, 211, 102, 0.1); border-radius: 20px; border: 1px dashed #25d366;">
+                    <p style="color:#065f46; font-weight:700; margin-bottom:10px;">Help your friends too! 😍</p>
+                    <a href="https://api.whatsapp.com/send?text=Hey! Find this amazing tool to download Instagram Reels in HD for free! 🔥 Check here: https://your-blogger-url.blogspot.com" class="btn-whatsapp" target="_blank">
+                        <i class="fab fa-whatsapp"></i> Share on WhatsApp
+                    </a>
+                </div>
             </div>
         </main>
 
@@ -594,6 +638,10 @@
                 </div>
             </div>
         </footer>
+
+        <a href="https://api.whatsapp.com/send?text=Check out this awesome Instagram Downloader!" class="float-share" target="_blank">
+            <i class="fab fa-whatsapp"></i> Tell a Friend
+        </a>
 
         <script>
             const API_BASE = "https://argha-7-insta-downloader-web.hf.space";
