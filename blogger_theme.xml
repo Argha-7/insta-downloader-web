@@ -41,12 +41,33 @@
                 overflow-x: hidden;
             }
 
-            /* Animations */
+            /* Advanced Animations */
             @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
             @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-            @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+            @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+            @keyframes bgShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+            @keyframes slideIn { from { transform: translateX(-50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
             .animate { animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+            .delay-1 { animation-delay: 0.2s; }
+            .delay-2 { animation-delay: 0.4s; }
+
+            /* Ad Placements */
+            .ad-slot {
+                width: 100%;
+                max-width: 728px;
+                min-height: 90px;
+                margin: 20px auto;
+                background: rgba(0,0,0,0.03);
+                border: 1px dashed #cbd5e1;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #94a3b8;
+                font-size: 0.8rem;
+                overflow: hidden;
+            }
 
             /* Navbar */
             .navbar {
@@ -234,23 +255,28 @@
             </div>
         </main>
 
-        <section class='features animate'>
-            <div class='f-card'>
+        <section class='features animate' style='background: linear-gradient(-45deg, #f8fafc, #eff6ff, #f8fafc); background-size: 400% 400%; animation: bgShift 15s ease infinite;'>
+            <div class='f-card animate delay-1'>
                 <i class="fas fa-bolt"></i>
                 <h3>Turbo Speed</h3>
                 <p>Advanced multi-threaded technology ensures your downloads are finished in seconds, not minutes.</p>
             </div>
-            <div class='f-card'>
+            <div class='f-card animate delay-2'>
                 <i class="fas fa-shield-halved"></i>
                 <h3>Privacy First</h3>
                 <p>We don't store your data or link history. Everything is processed and deleted instantly.</p>
             </div>
-            <div class='f-card'>
+            <div class='f-card animate delay-1' style='animation-delay:0.6s;'>
                 <i class="fas fa-infinity"></i>
                 <h3>Smart Failover</h3>
                 <p>Exclusive AI technology that automatically switches servers if Instagram blocks the connection.</p>
             </div>
         </section>
+
+        <!-- Bottom Ad Slot -->
+        <div class='ad-slot' style='margin: 50px auto;'>
+            <span>ADSTERRA FOOTER AD</span>
+        </div>
 
         <footer>
             <div class="social-links">
