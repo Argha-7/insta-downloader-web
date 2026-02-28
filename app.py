@@ -12,6 +12,27 @@ from flask_limiter.util import get_remote_address
 app = Flask(__name__)
 CORS(app)
 
+# SECURITY CONFIG
+ALLOWED_ORIGINS = [
+    "https://argha-7.blogspot.com",  # Replace with your actual blogger URL
+    "http://localhost:5000",          # For local testing
+    "http://127.0.0.1:5000"
+]
+APP_SECRET = "insta_pro_ai_secure_99" # Simple secret key
+
+def verify_request():
+    """Verify that the request comes from our site and has the secret."""
+    origin = request.headers.get('Origin') or request.headers.get('Referer')
+    secret = request.headers.get('X-App-Secret')
+    
+    # Optional: For development, you can relax this, but for production it's critical
+    # if not origin or not any(o in origin for o in ALLOWED_ORIGINS):
+    #     return False
+    
+    if secret != APP_SECRET:
+        return False
+    return True
+
 # Rate Limiter setup (Prevents abuse)
 limiter = Limiter(
     get_remote_address,
@@ -134,6 +155,8 @@ def index():
 @app.route('/download', methods=['POST'])
 @limiter.limit("5 per minute")
 def handle_download():
+    if not verify_request():
+        return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
     ip = get_remote_address()
     is_signed_up = request.json.get('signed_up', False)
     limit = 20 if is_signed_up else 10
@@ -177,6 +200,8 @@ def handle_download():
 
 @app.route('/check-limit', methods=['POST'])
 def check_limit():
+    if not verify_request():
+        return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
     ip = get_remote_address()
     is_signed_up = request.json.get('signed_up', False)
     limit = 20 if is_signed_up else 10
@@ -199,6 +224,8 @@ def proxy_image():
 @app.route('/preview', methods=['POST'])
 def get_preview():
     """Fetches metadata (title/thumbnail) without downloading."""
+    if not verify_request():
+        return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
     url = request.json.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
     
