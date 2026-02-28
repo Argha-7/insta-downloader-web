@@ -42,7 +42,8 @@ def download_video(url):
     # Clean the URL to remove UTM parameters
     if '?' in url:
         url = url.split('?')[0]
-        
+    
+    # Very Robust yt-dlp options
     ydl_opts = {
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, 'insta_%(id)s.%(ext)s'),
@@ -51,17 +52,16 @@ def download_video(url):
         'noplaylist': True,
         'merge_output_format': 'mp4',
         'max_filesize': 100 * 1024 * 1024,
-        'nocheckcertificate': True, # Bypass SSL issues
+        'nocheckcertificate': True,
         'ignoreerrors': False,
-        'logtostderr': True,
-        # Even more robust headers
+        'source_address': '0.0.0.0', # Force IPv4 (Crucial for some DNS/Network issues)
+        'socket_timeout': 30, # Longer timeout
+        
+        # Authentic Headers
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Dest': 'document',
             'Referer': 'https://www.instagram.com/',
         },
         'extractor_args': {
@@ -72,12 +72,15 @@ def download_video(url):
     }
     
     try:
+        # Log the URL being processed (shows in HF logs)
+        print(f"Processing URL: {url}")
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             # First extract info
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
             
-            # Merged file check
+            # Merged file check (sometimes extension changes to .mp4 automatically)
             if not os.path.exists(filename):
                 base = os.path.splitext(filename)[0]
                 for ext in ['mp4', 'mkv', 'webm']:
@@ -95,18 +98,18 @@ def download_video(url):
         err_str = str(e)
         print(f"CRITICAL ERROR: {err_str}")
         
-        # Friendly error mapping
         if "Private" in err_str:
             return False, "This video is Private. We can't download it."
         if "login" in err_str:
-            return False, "Instagram is asking for Login. This usually happens when they block the server."
+            return False, "Instagram is asking for Login. Try again or check the link."
         if "403" in err_str:
-            return False, "Instagram is blocking this server (403 Forbidden). Try again later."
+            return False, "Instagram is blocking this server IP. Try again later."
         if "429" in err_str:
             return False, "Too many requests. Please wait a few minutes."
+        if "address associated" in err_str:
+            return False, "Network/DNS Error: Hugging Face server can't reach Instagram. Try again in 2-3 minutes."
             
-        # If it's something else, show a snippet of the error for debugging
-        return False, f"Error: {err_str[:100]}..."
+        return False, f"Download failed: {err_str[:80]}..."
 
 @app.route('/')
 def index():
