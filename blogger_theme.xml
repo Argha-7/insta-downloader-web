@@ -1059,10 +1059,10 @@
 
                 // 2. Start Actual Download
                 try {
+                    statusText.innerText = 'Creating Job...';
                     const response = await fetch(`${API_BASE}/download`, {
-                        method: 'POST',
-                        headers: getSecureHeaders(),
-                        body: JSON.stringify({ url: url })
+                        method: 'POST', headers: await getSecureHeaders(),
+                        body: JSON.stringify({ url }), signal: AbortSignal.timeout(45000)
                     });
                     const data = await response.json();
 
