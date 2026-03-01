@@ -137,45 +137,63 @@
                 transition: all 0.3s ease;
             }
             .nav-wallet i { color: #facc15; }
-            .nav-wallet:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59,130,246,0.1); }
+            .nav-wallet:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59,130,246,0.1); cursor: pointer; }
             
             .nav-cash {
                 background: rgba(34, 197, 94, 0.1);
                 border-color: rgba(34, 197, 94, 0.2);
                 color: #15803d;
-                font-weight: 800;
             }
             .nav-cash i { color: #22c55e !important; }
 
-            .user-profile {
+            /* Earnings Dashboard */
+            .dashboard-modal {
                 display: none;
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.6);
+                backdrop-filter: blur(10px);
+                z-index: 2000;
+                justify-content: center;
                 align-items: center;
-                gap: 10px;
-                background: white;
-                padding: 5px 15px 5px 5px;
-                border-radius: 50px;
-                border: 1px solid #e2e8f0;
-                cursor: pointer;
             }
-            .user-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
-            .user-name { font-weight: 600; font-size: 0.9rem; color: #1e293b; }
-
-            .btn-login {
+            .dash-content {
+                background: white;
+                width: 90%;
+                max-width: 500px;
+                padding: 40px;
+                border-radius: 30px;
+                position: relative;
+                text-align: center;
+                box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            }
+            .dash-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #94a3b8; }
+            .dash-balance { font-size: 2.8rem; font-weight: 800; color: var(--dark); margin: 15px 0; }
+            .ref-box {
+                background: #f1f5f9;
+                padding: 12px 15px;
+                border-radius: 12px;
+                display: flex;
+                gap: 10px;
+                margin: 20px 0;
+                border: 1px solid #e2e8f0;
+            }
+            .ref-box input { border: none; background: transparent; flex: 1; font-weight: 600; color: #475569; font-size: 0.9rem; }
+            .btn-withdraw {
+                width: 100%;
                 background: #1e293b;
                 color: white;
-                padding: 10px 20px;
-                border-radius: 50px;
+                padding: 15px;
+                border-radius: 12px;
                 border: none;
-                font-weight: 600;
+                font-weight: 700;
+                margin-top: 10px;
                 cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 8px;
                 transition: 0.3s;
             }
-            .btn-login:hover { background: #000; transform: scale(1.05); }
-            .btn-login i { color: #facc15; }
+            .btn-withdraw:hover { background: #0f172a; transform: scale(1.02); }
             
+
             .btn-whatsapp {
                 display: inline-flex;
                 align-items: center;
@@ -703,24 +721,40 @@
                 <i class="fab fa-instagram"></i> InstaStream <span>AI</span>
             </a>
             <div style="display: flex; gap: 15px; align-items: center;" class="nav-links">
-                <div class="nav-wallet nav-cash" id="cashWallet" title="Earnings Wallet">
+                <div class="nav-wallet" id="walletDisplay" onclick="updateCredits()" title="Points Balance">
+                    <i class="fas fa-coins"></i>
+                    <span id="navCredits">50</span>
+                </div>
+                <div class="nav-wallet nav-cash" onclick="openDashboard()" title="Earnings Dashboard">
                     <i class="fas fa-wallet"></i> ₹                    <span id="navBalance">0.00</span>
                 </div>
-                <div class="nav-wallet" id="limitWallet" title="Daily Downloads">
-                    <i class="fas fa-bolt"></i>
-                    <span id="navRemaining">10</span>
-                </div>
-
-                <button class="btn-login" id="loginBtn" onclick="loginWithGoogle()">
-                    <i class="fab fa-google"></i> Login
-                </button>
-
-                <div class="user-profile" id="userProfile" onclick="logout()">
-                    <img class="user-avatar" id="userAvatar" src=""/>
-                    <span class="user-name" id="userName">User</span>
-                </div>
+                <a class='btn-started' href='javascript:void(0)' onclick="openDashboard()">Dashboard</a>
             </div>
         </nav>
+
+        <!-- Earnings Dashboard Modal -->
+        <div class="dashboard-modal" id="dashModal">
+            <div class="dash-content">
+                <span class="dash-close" onclick="closeDashboard()">&times;</span>
+                <i class="fas fa-piggy-bank" style="font-size: 3rem; color: #22c55e;"></i>
+                <h2 style="margin-top: 15px;">Your Earnings</h2>
+                <div class="dash-balance">₹                    <span id="dashBalance">0.00</span>
+                </div>
+                <p style="color: #64748b; font-size: 0.9rem;">You earn ₹0.50 per download and ₹2.00 per referral!</p>
+
+                <div class="ref-box">
+                    <input id="refUrl" readonly="" type="text" value="https://argha-7.blogspot.com?ref=..."/>
+                    <button onclick="copyRef()" style="border:none; color:var(--primary); background:none; font-weight:700; cursor:pointer;">Copy</button>
+                </div>
+
+                <div style="text-align: left; margin: 20px 0;">
+                    <label style="font-size:0.8rem; color:#64748b; font-weight:700;">Enter UPI ID for Withdrawal</label>
+                    <input id="upiInput" placeholder="example@ybl" style="width:100%; padding: 12px; border-radius:10px; border:1px solid #e2e8f0; margin-top:5px;" type="text"/>
+                </div>
+                <button class="btn-withdraw" onclick="withdraw()">Withdraw to UPI</button>
+                <p style="font-size:0.7rem; color:#94a3b8; margin-top:15px;">Min. withdrawal: ₹50.00 | Processed in 24h</p>
+            </div>
+        </div>
 
         <main class='hero animate'>
             <!-- Top Ad Slot -->
@@ -981,26 +1015,6 @@
         <a href="https://api.whatsapp.com/send?text=Check out this awesome Instagram Downloader!" class="float-share" target="_blank">
             <i class="fab fa-whatsapp"></i> Tell a Friend
         </a>
-        <title>InstaStream AI | Premium Instagram Downloader</title>
-        <!-- Firebase SDK (v9+ Compatibility) -->
-        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
-        <script>
-        // CONFIG: Replace with your Firebase settings
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        </script>
 
         <script>
             // Hiding API and Secrets from simple inspection
@@ -1059,10 +1073,10 @@
 
                 // 2. Start Actual Download
                 try {
-                    statusText.innerText = 'Creating Job...';
                     const response = await fetch(`${API_BASE}/download`, {
-                        method: 'POST', headers: await getSecureHeaders(),
-                        body: JSON.stringify({ url }), signal: AbortSignal.timeout(45000)
+                        method: 'POST',
+                        headers: getSecureHeaders(),
+                        body: JSON.stringify({ url: url })
                     });
                     const data = await response.json();
 
@@ -1156,81 +1170,68 @@
             let mouseY = window.innerHeight / 2;
             let auraX = mouseX, auraY = mouseY;
 
-            // 4. Firebase & Identity Logic
-            let currentUser = null;
-            let currentToken = null;
+            // Limit & Points & referral Logic
+            let referralID = "";
+            
+            // Capture 'ref' from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const refParam = urlParams.get('ref') || "";
 
-            async function getSecureHeaders() {
-                const headers = {
-                    'Content-Type': 'application/json',
-                    'X-App-Secret': APP_SECRET
-                };
-                if (currentToken) {
-                    headers['Authorization'] = `Bearer ${currentToken}`;
-                }
-                return headers;
-            }
-
-            async function loginWithGoogle() {
-                const provider = new firebase.auth.GoogleAuthProvider();
+            async function updateCredits() {
                 try {
-                    await auth.signInWithPopup(provider);
-                } catch (error) {
-                    console.error("Login failed:", error);
-                }
-            }
-
-            function logout() {
-                if(confirm("Logout from InstaStream AI?")) auth.signOut();
-            }
-
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    currentUser = user;
-                    currentToken = await user.getIdToken();
-                    
-                    document.getElementById('loginBtn').style.display = 'none';
-                    document.getElementById('userProfile').style.display = 'flex';
-                    document.getElementById('userAvatar').src = user.photoURL;
-                    document.getElementById('userName').innerText = user.displayName.split(' ')[0];
-                } else {
-                    currentUser = null;
-                    currentToken = null;
-                    document.getElementById('loginBtn').style.display = 'flex';
-                    document.getElementById('userProfile').style.display = 'none';
-                }
-                updateLimits();
-            });
-
-            // Limit & Usage Logic
-            async function updateLimits() {
-                try {
-                    const headers = await getSecureHeaders();
                     const res = await fetch(`${API_BASE}/check-limit`, {
                         method: 'POST',
-                        headers: headers,
-                        body: JSON.stringify({})
+                        headers: getSecureHeaders(),
+                        body: JSON.stringify({ ref: refParam })
                     });
                     const data = await res.json();
+                    const credits = data.credits || 0;
+                    const balance = data.balance || 0;
+                    referralID = data.referral_id;
+
+                    document.getElementById('limitText').innerText = `Balance: ${credits} Credits`;
+                    document.getElementById('navCredits').innerText = credits;
+                    document.getElementById('navBalance').innerText = balance.toFixed(2);
+                    document.getElementById('dashBalance').innerText = balance.toFixed(2);
+                    document.getElementById('refUrl').value = `https://argha-7.blogspot.com?ref=${referralID}`;
                     
-                    document.getElementById('navRemaining').innerText = data.remaining;
-                    document.getElementById('navBalance').innerText = data.balance.toFixed(2);
-                    
-                    const badgeText = data.is_guest ? 
-                        `Guest Reward: ₹${data.balance.toFixed(2)} (Login to save)` : 
-                        `Current Balance: ₹${data.balance.toFixed(2)}`;
-                    
-                    document.getElementById('limitText').innerText = badgeText;
-                    
-                    if (data.remaining <= 0) {
-                        document.getElementById('limitWallet').style.background = 'rgba(239, 68, 68, 0.1)';
+                    if (credits < 10) {
+                        document.getElementById('walletDisplay').style.background = 'rgba(239, 68, 68, 0.1)';
                     } else {
-                        document.getElementById('limitWallet').style.background = 'rgba(59, 130, 246, 0.1)';
+                        document.getElementById('walletDisplay').style.background = 'rgba(59, 130, 246, 0.1)';
                     }
                 } catch (e) {
-                    console.error("Limit fetch failed");
+                    console.error("Credit fetch failed");
                 }
             }
+
+            function openDashboard() { document.getElementById('dashModal').style.display = 'flex'; }
+            function closeDashboard() { document.getElementById('dashModal').style.display = 'none'; }
+            function copyRef() {
+                const copyText = document.getElementById("refUrl");
+                copyText.select();
+                document.execCommand("copy");
+                alert("Referral link copied!");
+            }
+
+            async function withdraw() {
+                const upi = document.getElementById('upiInput').value;
+                if (!upi.includes('@')) { alert('Please enter valid UPI ID'); return; }
+                
+                try {
+                    const res = await fetch(`${API_BASE}/withdraw`, {
+                        method: 'POST',
+                        headers: getSecureHeaders(),
+                        body: JSON.stringify({ upi_id: upi })
+                    });
+                    const data = await res.json();
+                    alert(data.message);
+                } catch (e) {
+                    alert('Withdrawal failed. Try again.');
+                }
+            }
+
+            async function claimReward() {
                 // Short delay to ensure they click the link
                 setTimeout(async () => {
                     try {
@@ -1242,7 +1243,9 @@
                         const data = await res.json();
                         if (data.success) {
                             updateCredits();
-                            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                            if(typeof confetti !== "undefined") {
+                                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                            }
                             alert(data.message);
                         }
                     } catch (e) {

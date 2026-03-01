@@ -8,21 +8,6 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import firebase_admin
-from firebase_admin import credentials, auth, firestore
-
-# Firebase Initialization
-# You must provide 'serviceAccountKey.json' in the same directory
-try:
-    if not firebase_admin._apps:
-        cred = credentials.Certificate('serviceAccountKey.json')
-        firebase_admin.initialize_app(cred)
-    db = firestore.client()
-    FIREBASE_ENABLED = True
-    print("FIREBASE: Successfully initialized.")
-except Exception as e:
-    FIREBASE_ENABLED = False
-    print(f"FIREBASE WARNING: Service account not found or invalid: {e}")
 
 app = Flask(__name__)
 # Simplified CORS for debugging - allows all origins and headers temporarily
@@ -60,79 +45,40 @@ DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'downloads')
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
-# Usage tracking (Universal System)
-# Format for Guest: {ip: {'count': 0, 'balance': 0.0, 'last_reset': timestamp}}
-user_usage = {}
-DAILY_LIMIT = 10
-REWARD_PER_DOWNLOAD = 0.20
+# Usage tracking (Credits & Cash System)
+# Format: {ip: {'credits': 50, 'balance': 0.0, 'referral_id': '...', 'last_activity': timestamp}}
+user_credits = {}
+DEFAULT_CREDITS = 50
+DOWNLOAD_COST = 10
+SHARE_REWARD = 20
+DOWNLOAD_CASH_REWARD = 0.50 # ₹0.50 per download
+REFERRAL_CASH_REWARD = 2.00  # ₹2.00 per new referral
 
-def get_user_data(token_id=None, ip=None):
-    """Get user stats from Firestore (if token) or memory (if guest)."""
-    now = time.time()
-    
-    # CASE 1: Authenticated User (Firebase)
-    if token_id and FIREBASE_ENABLED:
-        try:
-            decoded_token = auth.verify_id_token(token_id)
-            uid = decoded_token['uid']
-            user_ref = db.collection('users').document(uid)
-            doc = user_ref.get()
-            
-            if doc.exists:
-                data = doc.to_dict()
-                # Check for daily reset (00:00 server time or 24h)
-                if now - data.get('last_reset', 0) > 86400:
-                    data['count'] = 0
-                    data['last_reset'] = now
-                    user_ref.update({'count': 0, 'last_reset': now})
-                return {'uid': uid, 'data': data, 'is_guest': False}
-            else:
-                # Initialize new user in Firestore
-                new_data = {
-                    'count': 0, 
-                    'balance': 0.0, 
-                    'last_reset': now, 
-                    'email': decoded_token.get('email', ''),
-                    'name': decoded_token.get('name', 'User')
-                }
-                user_ref.set(new_data)
-                return {'uid': uid, 'data': new_data, 'is_guest': False}
-        except Exception as e:
-            print(f"FIREBASE AUTH ERROR: {e}")
+def generate_ref_id():
+    return str(uuid.uuid4())[:8]
 
-    # CASE 2: Guest User (IP Based)
-    if ip not in user_usage:
-        user_usage[ip] = {'count': 0, 'balance': 0.0, 'last_reset': now}
-    
-    if now - user_usage[ip]['last_reset'] > 86400:
-        user_usage[ip] = {'count': 0, 'balance': 0.0, 'last_reset': now}
+def get_user_data(ip):
+    """Helper to get or initialize user data with referral tracking."""
+    if ip not in user_credits:
+        # Check if the request contains a referral ID
+        ref_id = request.json.get('ref') if request.is_json else request.args.get('ref')
         
-    return {'uid': ip, 'data': user_usage[ip], 'is_guest': True}
-
-def update_user_stats(uid, delta_count, delta_balance, is_guest):
-    """Update user stats in Firestore or memory."""
-    if not is_guest and FIREBASE_ENABLED:
-        try:
-            user_ref = db.collection('users').document(uid)
-            user_ref.update({
-                'count': firestore.Increment(delta_count),
-                'balance': firestore.Increment(delta_balance),
-                'last_activity': firestore.SERVER_TIMESTAMP
-            })
-        except Exception as e:
-            print(f"FIREBASE DB ERROR: {e}")
-            # Fallback to memory if DB write fails
-            if uid not in user_usage:
-                user_usage[uid] = {'count': 0, 'balance': 0.0, 'last_reset': time.time()}
-            user_usage[uid]['count'] += delta_count
-            user_usage[uid]['balance'] += delta_balance
-    else:
-        # Update in memory
-        if uid not in user_usage:
-            user_usage[uid] = {'count': 0, 'balance': 0.0, 'last_reset': time.time()}
+        user_credits[ip] = {
+            'credits': DEFAULT_CREDITS, 
+            'balance': 0.0,
+            'referral_id': generate_ref_id(),
+            'last_activity': time.time()
+        }
         
-        user_usage[uid]['count'] += delta_count
-        user_usage[uid]['balance'] += delta_balance
+        # Reward the referrer if valid
+        if ref_id:
+            for other_ip, data in user_credits.items():
+                if data['referral_id'] == ref_id and other_ip != ip:
+                    data['balance'] += REFERRAL_CASH_REWARD
+                    print(f"REFERRAL REWARD: {other_ip} earned ₹{REFERRAL_CASH_REWARD} for referring {ip}")
+                    break
+                    
+    return user_credits[ip]
 job_status = {}
 
 # Cleanup task to delete files older than 20 minutes
@@ -155,8 +101,8 @@ def trigger_github_action(video_url, job_id):
     repo = os.environ.get('GH_REPO') # e.g., "Argha-7/insta-downloader-web"
     
     if not token or not repo:
-        print("GITHUB ERROR: GH_TOKEN or GH_REPO not set. Skipping trigger (Local Testing).")
-        return "MISSING_TOKEN"
+        print("GITHUB ERROR: GH_TOKEN or GH_REPO not set in Secrets.")
+        return False
 
     url = f"https://api.github.com/repos/{repo}/actions/workflows/download.yml/dispatches"
     headers = {
@@ -166,7 +112,7 @@ def trigger_github_action(video_url, job_id):
     # Current Space URL for callback
     space_name = os.environ.get('SPACE_ID', '')
     if space_name:
-        callback_url = f"https://{space_name.lower().replace('/', '-')}.hf.space/github-callback?job_id={job_id}"
+        callback_url = f"https://{space_name.replace('/', '-')}.hf.space/github-callback?job_id={job_id}"
     else:
         # Fallback for local testing (won't work for callback but for trigger)
         callback_url = ""
@@ -191,7 +137,7 @@ def trigger_github_action(video_url, job_id):
         print(f"GitHub Trigger Exception: {e}")
         return False
 
-def download_video(url, current_job_id=None):
+def download_video(url):
     """Main download logic with local-first, then GitHub failover."""
     if '?' in url:
         url = url.split('?')[0]
@@ -211,30 +157,24 @@ def download_video(url, current_job_id=None):
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            print(f"Starting local download for {url}...")
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
             if os.path.exists(filename):
                 return "SUCCESS", {
-                        'filename': os.path.basename(filename),
-                        'title': info.get('title', 'Instagram Video'),
-                        'thumbnail': info.get('thumbnail', '')
-                    }
+                    'filename': os.path.basename(filename),
+                    'title': info.get('title', 'Instagram Video'),
+                    'thumbnail': info.get('thumbnail', '')
+                }
     except Exception as e:
-        import re
         err_str = str(e)
-        clean_err = re.sub(r'\x1b\[.*?m', '', err_str).lower()
         print(f"LOCAL DOWNLOAD FAILED: {err_str}")
         
-        # 2. Trigger GitHub Actions if blocked
-        if "403" in clean_err or "forbidden" in clean_err or "address associated" in clean_err or "blocked" in clean_err or "empty media" in clean_err or "api is not granting access" in clean_err or "not available" in clean_err:
-            if not current_job_id: current_job_id = str(uuid.uuid4())
-            job_status[current_job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
-            trigger_result = trigger_github_action(url, current_job_id)
-            if trigger_result == True:
-                return "PENDING_GITHUB", current_job_id
-            elif trigger_result == "MISSING_TOKEN":
-                return "PENDING_GITHUB_LOCAL", current_job_id
+        # 2. Trigger GitHub Actions if blocked or extraction fails
+        if "403" in err_str or "Forbidden" in err_str or "address associated" in err_str or "ExtractorError" in err_str or "JSON" in err_str:
+            job_id = str(uuid.uuid4())
+            job_status[job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
+            if trigger_github_action(url, job_id):
+                return "PENDING_GITHUB", job_id
         
         return "FAILED", f"Error: {err_str[:100]}"
 
@@ -248,87 +188,89 @@ def handle_download():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
     ip = get_remote_address()
-    auth_header = request.headers.get('Authorization')
-    token = auth_header.split('Bearer ')[1] if auth_header and 'Bearer ' in auth_header else None
+    user_data = get_user_data(ip)
     
-    user = get_user_data(token_id=token, ip=ip)
-    user_data = user['data']
-    
-    if user_data['count'] >= DAILY_LIMIT:
-        return jsonify({'success': False, 'message': f'Daily limit reached ({DAILY_LIMIT} downloads). Login or come back tomorrow!'}), 403
+    if user_data['credits'] < DOWNLOAD_COST:
+        return jsonify({'success': False, 'message': f'Insufficient credits ({user_data["credits"]}). Share on WhatsApp to earn more!'}), 403
 
     data = request.json
     url = data.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
-    # Extract host_url before thread starts
-    host_url = request.host_url
     
-    # Generate Job ID and start background thread
-    job_id = str(uuid.uuid4())
-    job_status[job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
+    status, result = download_video(url)
     
-    # Reward for starting a job
-    update_user_stats(user['uid'], 1, REWARD_PER_DOWNLOAD, user['is_guest'])
-
-    def run_download_task(target_url, j_id, h_url):
-        status, result = download_video(target_url, j_id)
-        if status == "SUCCESS":
-            raw_thumb = result.get('thumbnail', '')
-            try:
-                proxy_thumb = f"{h_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
-            except:
-                proxy_thumb = raw_thumb
-            
-            job_status[j_id] = {
-                'status': 'ready',
-                'filename': result['filename'],
-                'title': result['title'],
-                'thumbnail': proxy_thumb
-            }
-        elif status == "PENDING_GITHUB" or status == "PENDING_GITHUB_LOCAL":
-            job_status[result]['status'] = 'pending'
-            
-            msg = 'Hugging Face is blocked. Switching to GitHub Backup...'
-            if status == "PENDING_GITHUB_LOCAL":
-                msg = 'Local Testing: GitHub Trigger skipped due to missing tokens. Simulating pending state...'
-                
-            job_status[result]['message'] = msg
-        else:
-            job_status[j_id] = {'status': 'failed', 'message': result}
-            
-    # Start thread
-    import threading
-    thread = threading.Thread(target=run_download_task, args=(url, job_id, host_url))
-    thread.daemon = True
-    thread.start()
-    
-    return jsonify({
-        'success': True, 
-        'status': 'pending',
-        'job_id': job_id,
-        'remaining': DAILY_LIMIT - (user_data['count'] + 1),
-        'balance': round(user_data['balance'] + REWARD_PER_DOWNLOAD, 2),
-        'message': 'Job Created. Pending...'
-    })
+    if status == "SUCCESS":
+        user_data['credits'] -= DOWNLOAD_COST
+        user_data['balance'] += DOWNLOAD_CASH_REWARD
+        raw_thumb = result.get('thumbnail', '')
+        proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
+        
+        return jsonify({
+            'success': True, 
+            'status': 'ready', 
+            'filename': result['filename'],
+            'title': result['title'],
+            'thumbnail': proxy_thumb,
+            'credits': user_data['credits'],
+            'balance': round(user_data['balance'], 2)
+        })
+    elif status == "PENDING_GITHUB":
+        user_data['credits'] -= DOWNLOAD_COST
+        user_data['balance'] += DOWNLOAD_CASH_REWARD
+        # GitHub action update: we won't have metadata immediately
+        return jsonify({
+            'success': True, 
+            'status': 'pending', 
+            'job_id': result, 
+            'credits': user_data['credits'], 
+            'balance': round(user_data['balance'], 2),
+            'message': 'Hugging Face is blocked. Switching to GitHub Backup...' 
+        })
+    else:
+        return jsonify({'success': False, 'message': result})
 
 @app.route('/check-limit', methods=['POST'])
 def check_limit():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
-    
     ip = get_remote_address()
-    auth_header = request.headers.get('Authorization')
-    token = auth_header.split('Bearer ')[1] if auth_header and 'Bearer ' in auth_header else None
-    
-    user = get_user_data(token_id=token, ip=ip)
-    user_data = user['data']
-    
+    user_data = get_user_data(ip)
     return jsonify({
-        'usage': user_data['count'],
-        'limit': DAILY_LIMIT,
-        'remaining': max(0, DAILY_LIMIT - user_data['count']),
+        'credits': user_data['credits'],
         'balance': round(user_data['balance'], 2),
-        'is_guest': user['is_guest']
+        'referral_id': user_data['referral_id'],
+        'cost': DOWNLOAD_COST,
+        'reward': SHARE_REWARD
+    })
+
+@app.route('/withdraw', methods=['POST'])
+def handle_withdraw():
+    """Placeholder for withdrawal requests."""
+    if not verify_request():
+        return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
+    ip = get_remote_address()
+    user_data = get_user_data(ip)
+    upi_id = request.json.get('upi_id')
+    
+    if user_data['balance'] < 50:
+        return jsonify({'success': False, 'message': 'Minimum withdrawal is ₹50.00'}), 400
+        
+    # In a real app, you'd save this to a database
+    print(f"WITHDRAW REQUEST: User {ip} requested withdrawal of ₹{user_data['balance']} to UPI: {upi_id}")
+    return jsonify({'success': True, 'message': 'Withdrawal request sent! We will process it within 24 hours.'})
+
+@app.route('/reward-share', methods=['POST'])
+def reward_share():
+    """Reward user for sharing the site."""
+    if not verify_request():
+        return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
+    ip = get_remote_address()
+    user_data = get_user_data(ip)
+    user_data['credits'] += SHARE_REWARD
+    return jsonify({
+        'success': True,
+        'message': f'Gift Received! +{SHARE_REWARD} credits added.',
+        'credits': user_data['credits']
     })
 
 @app.route('/proxy-img')
@@ -358,7 +300,6 @@ def get_preview():
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
-        'socket_timeout': 5, # Forces yt-dlp to timeout quickly so UI doesn't hang
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
         }
