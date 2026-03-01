@@ -710,322 +710,378 @@
                 .btn-download-final, .btn-copy-link { font-size: 0.95rem; }
                 .modal-content { padding: 30px 20px; }
             }
-        </style>
-    </head>
-    <body style='cursor: none;'>
-        <div class='cursor-point' id='cursor-point'></div>
-        <div class='cursor-aura' id='cursor-aura'></div>
-        <canvas id='particle-canvas'></canvas>
-        <nav class='navbar'>
-            <a class='logo' href='/'>
-                <i class="fab fa-instagram"></i> InstaStream <span>AI</span>
-            </a>
-            <div style="display: flex; gap: 15px; align-items: center;" class="nav-links">
-                <div class="nav-wallet" id="walletDisplay" onclick="updateCredits()" title="Points Balance">
-                    <i class="fas fa-coins"></i>
-                    <span id="navCredits">50</span>
+                                <!-- Firebase SDKs -->
+            <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+            <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+
+        </head>
+        <body style='cursor: none;'>
+            <div class='cursor-point' id='cursor-point'></div>
+            <div class='cursor-aura' id='cursor-aura'></div>
+            <canvas id='particle-canvas'></canvas>
+            <nav class='navbar'>
+                <a class='logo' href='/'>
+                    <i class="fab fa-instagram"></i> InstaStream <span>AI</span>
+                </a>
+                <div style="display: flex; gap: 15px; align-items: center;" class="nav-links">
+                    <div class="nav-wallet" id="walletDisplay" onclick="updateCredits()" title="Points Balance">
+                        <i class="fas fa-coins"></i>
+                        <span id="navCredits">50</span>
+                    </div>
+                    <div class="nav-wallet nav-cash" onclick="openDashboard()" title="Earnings Dashboard">
+                        <i class="fas fa-wallet"></i> ₹                        <span id="navBalance">0.00</span>
+                    </div>
+                    <div id="userProfile" style="display:none; align-items:center; gap:10px; font-weight:700; color:var(--dark);">
+                        <img id="userAvatar" src="" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);"/>
+                    </div>
+                    <a class='btn-started' id='authBtn' href='javascript:void(0)' onclick="toggleAuth()">Login to Earn</a>
                 </div>
-                <div class="nav-wallet nav-cash" onclick="openDashboard()" title="Earnings Dashboard">
-                    <i class="fas fa-wallet"></i> ₹                    <span id="navBalance">0.00</span>
+            </nav>
+
+            <!-- Earnings Dashboard Modal -->
+            <div class="dashboard-modal" id="dashModal">
+                <div class="dash-content">
+                    <span class="dash-close" onclick="closeDashboard()">&times;</span>
+                    <i class="fas fa-piggy-bank" style="font-size: 3rem; color: #22c55e;"></i>
+                    <h2 style="margin-top: 15px;">Your Earnings</h2>
+                    <div class="dash-balance">₹                        <span id="dashBalance">0.00</span>
+                    </div>
+                    <p style="color: #64748b; font-size: 0.9rem;">You earn ₹0.50 per download and ₹2.00 per referral!</p>
+
+                    <div class="ref-box">
+                        <input id="refUrl" readonly="" type="text" value="https://argha-7.blogspot.com?ref=..."/>
+                        <button onclick="copyRef()" style="border:none; color:var(--primary); background:none; font-weight:700; cursor:pointer;">Copy</button>
+                    </div>
+
+                    <div style="text-align: left; margin: 20px 0;">
+                        <label style="font-size:0.8rem; color:#64748b; font-weight:700;">Enter UPI ID for Withdrawal</label>
+                        <input id="upiInput" placeholder="example@ybl" style="width:100%; padding: 12px; border-radius:10px; border:1px solid #e2e8f0; margin-top:5px;" type="text"/>
+                    </div>
+                    <button class="btn-withdraw" onclick="withdraw()">Withdraw to UPI</button>
+                    <p style="font-size:0.7rem; color:#94a3b8; margin-top:15px;">Min. withdrawal: ₹50.00 | Processed in 24h</p>
                 </div>
-                <a class='btn-started' href='javascript:void(0)' onclick="openDashboard()">Dashboard</a>
             </div>
-        </nav>
 
-        <!-- Earnings Dashboard Modal -->
-        <div class="dashboard-modal" id="dashModal">
-            <div class="dash-content">
-                <span class="dash-close" onclick="closeDashboard()">&times;</span>
-                <i class="fas fa-piggy-bank" style="font-size: 3rem; color: #22c55e;"></i>
-                <h2 style="margin-top: 15px;">Your Earnings</h2>
-                <div class="dash-balance">₹                    <span id="dashBalance">0.00</span>
-                </div>
-                <p style="color: #64748b; font-size: 0.9rem;">You earn ₹0.50 per download and ₹2.00 per referral!</p>
-
-                <div class="ref-box">
-                    <input id="refUrl" readonly="" type="text" value="https://argha-7.blogspot.com?ref=..."/>
-                    <button onclick="copyRef()" style="border:none; color:var(--primary); background:none; font-weight:700; cursor:pointer;">Copy</button>
+            <main class='hero animate'>
+                <!-- Top Ad Slot -->
+                <div class='ad-slot'>
+                    <!-- Paste Adsterra Header Ad Code Here -->
+                    <span>ADSTERRA BANNER (728x90)</span>
                 </div>
 
-                <div style="text-align: left; margin: 20px 0;">
-                    <label style="font-size:0.8rem; color:#64748b; font-weight:700;">Enter UPI ID for Withdrawal</label>
-                    <input id="upiInput" placeholder="example@ybl" style="width:100%; padding: 12px; border-radius:10px; border:1px solid #e2e8f0; margin-top:5px;" type="text"/>
-                </div>
-                <button class="btn-withdraw" onclick="withdraw()">Withdraw to UPI</button>
-                <p style="font-size:0.7rem; color:#94a3b8; margin-top:15px;">Min. withdrawal: ₹50.00 | Processed in 24h</p>
-            </div>
-        </div>
-
-        <main class='hero animate'>
-            <!-- Top Ad Slot -->
-            <div class='ad-slot'>
-                <!-- Paste Adsterra Header Ad Code Here -->
-                <span>ADSTERRA BANNER (728x90)</span>
-            </div>
-
-            <h1 class='animate delay-1' style='margin-top: 20px;'>Download <span id='typing-text'></span>
-                <span class='typing-cursor'>|</span>
-                <br/>
+                <h1 class='animate delay-1' style='margin-top: 20px;'>Download <span id='typing-text'></span>
+                    <span class='typing-cursor'>|</span>
+                    <br/>
  Without Limits.</h1>
-            <p class='animate delay-2'>The fastest, safest, and most intelligent Instagram downloader. Free forever, no watermark, works on any device.</p>
+                <p class='animate delay-2'>The fastest, safest, and most intelligent Instagram downloader. Free forever, no watermark, works on any device.</p>
 
-            <div class='limit-badge animate delay-2' id='limitBadge'>
-                <i class="fas fa-chart-line"></i>
-                <span id='limitText'>Downloads Left: 10 / 10</span>
-            </div>
+                <div class='limit-badge animate delay-2' id='limitBadge'>
+                    <i class="fas fa-chart-line"></i>
+                    <span id='limitText'>Downloads Left: 10 / 10</span>
+                </div>
 
-            <div class='search-card animate' style='animation-delay: 0.6s;'>
-                <input id='urlInput' placeholder='Paste Instagram URL here...' type='text'/>
-                <button class='btn-action' id='downloadBtn' onclick='startDownload()'>
+                <div class='search-card animate' style='animation-delay: 0.6s;'>
+                    <input id='urlInput' placeholder='Paste Instagram URL here...' type='text'/>
+                    <button class='btn-action' id='downloadBtn' onclick='startDownload()'>
                     Download Now
-                </button>
-            </div>
+                    </button>
+                </div>
 
-            <!-- Middle Ad Slot -->
-            <div class='ad-slot' style='margin-top:40px;'>
-                <span>ADSTERRA NATIVE AD AREA</span>
-            </div>
+                <!-- Middle Ad Slot -->
+                <div class='ad-slot' style='margin-top:40px;'>
+                    <span>ADSTERRA NATIVE AD AREA</span>
+                </div>
 
-            <div class='progress-card' id='progressUI'>
-                <div class="progress-header">
-                    <img class="prog-thumb" id="progThumb" src="https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"/>
-                    <div class="prog-info">
-                        <div class="prog-title" id="progTitle">Analyzing video...</div>
-                        <div id='statusText'>Initializing...</div>
+                <div class='progress-card' id='progressUI'>
+                    <div class="progress-header">
+                        <img class="prog-thumb" id="progThumb" src="https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"/>
+                        <div class="prog-info">
+                            <div class="prog-title" id="progTitle">Analyzing video...</div>
+                            <div id='statusText'>Initializing...</div>
+                        </div>
                     </div>
-                </div>
-                <div class='progress-bar-wrap'>
-                    <div id='progressBar'></div>
-                </div>
-                <div style="font-size: 0.85rem; color: #64748b;">This might take a few seconds using our backup servers.</div>
-            </div>
-
-            <div id='result'>
-                <div class='result-card'>
-                    <img class='res-thumb' id='resThumb' src=''/>
-                    <div class='res-info'>
-                        <div class='res-title' id='resTitle'>Video Title</div>
-                        <div class='res-meta' id='resMeta'>Ready for download</div>
-                        <a class='btn-download-final' id='downloadLink' target='_blank'>
-                            <i class='fas fa-download'></i> Download Video
-                        </a>
-                        <button class='btn-copy-link' onclick='copyLink()'>
-                            <i class='far fa-clone'></i> Copy Link
-                        </button>
+                    <div class='progress-bar-wrap'>
+                        <div id='progressBar'></div>
                     </div>
+                    <div style="font-size: 0.85rem; color: #64748b;">This might take a few seconds using our backup servers.</div>
                 </div>
 
-                <div class='success-banner'>
-                    <i class='fas fa-check-circle'></i> Conversion completed successfully! Use the download button above.
-                </div>
-
-                <div style="margin-top: 30px; padding: 25px; background: rgba(37, 211, 102, 0.08); border-radius: 20px; border: 1px dashed #25D366; text-align: center;">
-                    <h3 style="color:#065f46; margin-bottom:10px; font-size:1.2rem;">😍 Low on Points?</h3>
-                    <p style="color:#1e293b; margin-bottom:20px;">Share this tool with friends on WhatsApp and get <b>+20 Bonus Points</b> instantly!</p>
-                    <a href="https://api.whatsapp.com/send?text=Hey! Found this amazing tool to download Instagram Reels in HD for free! 🔥 Check here: https://argha-7.blogspot.com" class="btn-whatsapp" onclick="claimReward()" target="_blank">
-                        <i class="fab fa-whatsapp"></i> Share & Earn +20
-                    </a>
-                </div>
-            </div>
-        </main>
-
-        <section class='features animate' id='features' style='background: linear-gradient(-45deg, #f8fafc, #eff6ff, #f8fafc); background-size: 400% 400%; animation: bgShift 15s ease infinite;'>
-            <div class='f-card animate delay-1'>
-                <i class="fas fa-bolt"></i>
-                <h3>Turbo Speed</h3>
-                <p>Advanced multi-threaded technology ensures your downloads are finished in seconds, not minutes.</p>
-            </div>
-            <div class='f-card animate delay-2'>
-                <i class="fas fa-shield-halved"></i>
-                <h3>Privacy First</h3>
-                <p>We don't store your data or link history. Everything is processed and deleted instantly.</p>
-            </div>
-            <div class='f-card animate delay-1' style='animation-delay:0.6s;'>
-                <i class="fas fa-infinity"></i>
-                <h3>Smart Failover</h3>
-                <p>Exclusive AI technology that automatically switches servers if Instagram blocks the connection.</p>
-            </div>
-        </section>
-
-        <!-- Pricing Section -->
-        <section class='pricing animate' id='pricing'>
-            <h2>Plans for Everyone</h2>
-            <p>Choose the plan that fits your needs. Start for free today.</p>
-
-            <div class='pricing-grid'>
-                <div class='p-card'>
-                    <h4>Free Tier</h4>
-                    <div class='price'>$0 <span>/month</span>
+                <div id='result'>
+                    <div class='result-card'>
+                        <img class='res-thumb' id='resThumb' src=''/>
+                        <div class='res-info'>
+                            <div class='res-title' id='resTitle'>Video Title</div>
+                            <div class='res-meta' id='resMeta'>Ready for download</div>
+                            <a class='btn-download-final' id='downloadLink' target='_blank'>
+                                <i class='fas fa-download'></i> Download Video
+                            </a>
+                            <button class='btn-copy-link' onclick='copyLink()'>
+                                <i class='far fa-clone'></i> Copy Link
+                            </button>
+                        </div>
                     </div>
-                    <ul>
-                        <li>
-                            <i class="fas fa-check"></i> 10 Daily Downloads</li>
-                        <li>
-                            <i class="fas fa-check"></i> HD Quality Video</li>
-                        <li>
-                            <i class="fas fa-check"></i> Smart Failover System</li>
-                        <li>
-                            <i class="fas fa-check"></i> No Registration</li>
-                    </ul>
-                    <a href="#" class="btn-outline">Current Plan</a>
-                </div>
 
-                <div class='p-card popular'>
-                    <div style="background:var(--primary); color:white; font-size:0.7rem; padding:5px 15px; position:absolute; top:20px; right:-30px; transform:rotate(45deg); width:120px;">FULL LICENSE</div>
-                    <h4>Theme License</h4>
-                    <div class='price'>$29 <span>/lifetime</span>
+                    <div class='success-banner'>
+                        <i class='fas fa-check-circle'></i> Conversion completed successfully! Use the download button above.
                     </div>
-                    <ul>
-                        <li>
-                            <i class="fas fa-check"></i> Own this Blogger Theme</li>
-                        <li>
-                            <i class="fas fa-check"></i> 1 Year Script Updates</li>
-                        <li>
-                            <i class="fas fa-check"></i> Setup Documentation</li>
-                        <li>
-                            <i class="fas fa-check"></i> Removal of Credits</li>
-                    </ul>
-                    <a href="#" class="btn-started" style="display:block;">Buy Theme Now</a>
-                </div>
 
-                <div class='p-card'>
-                    <h4>Pro Script</h4>
-                    <div class='price'>$10 <span>/year</span>
-                    </div>
-                    <ul>
-                        <li>
-                            <i class="fas fa-check"></i> Private API Access</li>
-                        <li>
-                            <i class="fas fa-check"></i> No IP Blocking</li>
-                        <li>
-                            <i class="fas fa-check"></i> Custom Domain Support</li>
-                        <li>
-                            <i class="fas fa-check"></i> Priority Email Support</li>
-                    </ul>
-                    <a href="#" class="btn-outline">Subscribe Now</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Sign Up Modal -->
-        <div class="modal" id="signupModal">
-            <div class="modal-content">
-                <i class="fas fa-user-plus" style="font-size:3rem; color:var(--primary); margin-bottom:20px;"></i>
-                <h2>Unlock More!</h2>
-                <p style="color:#64748b; margin-bottom:30px;">Sign up today and get 10 extra daily downloads for free!</p>
-                <input id="signupEmail" placeholder="Enter your email" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:15px;" type="email"/>
-                <button class="btn-started" onclick="simulatedSignup()" style="width:100%;">Create Account</button>
-                <p onclick="closeModal()" style="margin-top:20px; font-size:0.8rem; cursor:pointer; color:#94a3b8;">Maybe later</p>
-            </div>
-        </div>
-
-        <!-- Bottom Ad Slot -->
-        <div class='ad-slot' style='margin: 50px auto;'>
-            <span>ADSTERRA FOOTER AD</span>
-        </div>
-
-        <footer>
-            <div class='footer-grid'>
-                <div class='footer-col'>
-                    <a class='logo' href='/' style='color:white; margin-bottom:20px; display:inline-block; font-size:1.4rem;'>
-                        <i class="fab fa-instagram"></i> InstaStream
-                    </a>
-                    <p style='color: #94a3b8; font-size: 0.9rem; line-height: 1.6;'>The world's most intelligent Instagram video downloader. Fast, free, and secure solution for everyone.</p>
-                    <div class="social-links">
-                        <a href="#">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#">
-                            <i class="fab fa-linkedin-in"></i>
+                    <div style="margin-top: 30px; padding: 25px; background: rgba(37, 211, 102, 0.08); border-radius: 20px; border: 1px dashed #25D366; text-align: center;">
+                        <h3 style="color:#065f46; margin-bottom:10px; font-size:1.2rem;">😍 Low on Points?</h3>
+                        <p style="color:#1e293b; margin-bottom:20px;">Share this tool with friends on WhatsApp and get <b>+20 Bonus Points</b> instantly!</p>
+                        <a href="https://api.whatsapp.com/send?text=Hey! Found this amazing tool to download Instagram Reels in HD for free! 🔥 Check here: https://argha-7.blogspot.com" class="btn-whatsapp" onclick="claimReward()" target="_blank">
+                            <i class="fab fa-whatsapp"></i> Share & Earn +20
                         </a>
                     </div>
                 </div>
+            </main>
 
-                <div class='footer-col'>
-                    <h4>Product</h4>
-                    <ul>
-                        <li>
-                            <a href="#">Reels Downloader</a>
-                        </li>
-                        <li>
-                            <a href="#">Video Downloader</a>
-                        </li>
-                        <li>
-                            <a href="#">Photo Downloader</a>
-                        </li>
-                        <li>
-                            <a href="#">MP3 Converter</a>
-                        </li>
-                    </ul>
+            <section class='features animate' id='features' style='background: linear-gradient(-45deg, #f8fafc, #eff6ff, #f8fafc); background-size: 400% 400%; animation: bgShift 15s ease infinite;'>
+                <div class='f-card animate delay-1'>
+                    <i class="fas fa-bolt"></i>
+                    <h3>Turbo Speed</h3>
+                    <p>Advanced multi-threaded technology ensures your downloads are finished in seconds, not minutes.</p>
                 </div>
-
-                <div class='footer-col'>
-                    <h4>Support</h4>
-                    <ul>
-                        <li>
-                            <a href="#pricing">Pricing</a>
-                        </li>
-                        <li>
-                            <a href="#">Help Center</a>
-                        </li>
-                        <li>
-                            <a href="#">Contact Us</a>
-                        </li>
-                        <li>
-                            <a href="#">Buy a Coffee</a>
-                        </li>
-                    </ul>
+                <div class='f-card animate delay-2'>
+                    <i class="fas fa-shield-halved"></i>
+                    <h3>Privacy First</h3>
+                    <p>We don't store your data or link history. Everything is processed and deleted instantly.</p>
                 </div>
+                <div class='f-card animate delay-1' style='animation-delay:0.6s;'>
+                    <i class="fas fa-infinity"></i>
+                    <h3>Smart Failover</h3>
+                    <p>Exclusive AI technology that automatically switches servers if Instagram blocks the connection.</p>
+                </div>
+            </section>
 
-                <div class='footer-col'>
-                    <h4>Legal</h4>
-                    <ul>
-                        <li>
-                            <a href="#">Privacy Policy</a>
-                        </li>
-                        <li>
-                            <a href="#">Terms of Service</a>
-                        </li>
-                        <li>
-                            <a href="#">Cookie Policy</a>
-                        </li>
-                        <li>
-                            <a href="#">DMCA Notice</a>
-                        </li>
-                    </ul>
+            <!-- Pricing Section -->
+            <section class='pricing animate' id='pricing'>
+                <h2>Plans for Everyone</h2>
+                <p>Choose the plan that fits your needs. Start for free today.</p>
+
+                <div class='pricing-grid'>
+                    <div class='p-card'>
+                        <h4>Free Tier</h4>
+                        <div class='price'>$0 <span>/month</span>
+                        </div>
+                        <ul>
+                            <li>
+                                <i class="fas fa-check"></i> 10 Daily Downloads</li>
+                            <li>
+                                <i class="fas fa-check"></i> HD Quality Video</li>
+                            <li>
+                                <i class="fas fa-check"></i> Smart Failover System</li>
+                            <li>
+                                <i class="fas fa-check"></i> No Registration</li>
+                        </ul>
+                        <a href="#" class="btn-outline">Current Plan</a>
+                    </div>
+
+                    <div class='p-card popular'>
+                        <div style="background:var(--primary); color:white; font-size:0.7rem; padding:5px 15px; position:absolute; top:20px; right:-30px; transform:rotate(45deg); width:120px;">FULL LICENSE</div>
+                        <h4>Theme License</h4>
+                        <div class='price'>$29 <span>/lifetime</span>
+                        </div>
+                        <ul>
+                            <li>
+                                <i class="fas fa-check"></i> Own this Blogger Theme</li>
+                            <li>
+                                <i class="fas fa-check"></i> 1 Year Script Updates</li>
+                            <li>
+                                <i class="fas fa-check"></i> Setup Documentation</li>
+                            <li>
+                                <i class="fas fa-check"></i> Removal of Credits</li>
+                        </ul>
+                        <a href="#" class="btn-started" style="display:block;">Buy Theme Now</a>
+                    </div>
+
+                    <div class='p-card'>
+                        <h4>Pro Script</h4>
+                        <div class='price'>$10 <span>/year</span>
+                        </div>
+                        <ul>
+                            <li>
+                                <i class="fas fa-check"></i> Private API Access</li>
+                            <li>
+                                <i class="fas fa-check"></i> No IP Blocking</li>
+                            <li>
+                                <i class="fas fa-check"></i> Custom Domain Support</li>
+                            <li>
+                                <i class="fas fa-check"></i> Priority Email Support</li>
+                        </ul>
+                        <a href="#" class="btn-outline">Subscribe Now</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sign Up Modal -->
+            <div class="modal" id="signupModal">
+                <div class="modal-content">
+                    <i class="fas fa-user-plus" style="font-size:3rem; color:var(--primary); margin-bottom:20px;"></i>
+                    <h2>Unlock More!</h2>
+                    <p style="color:#64748b; margin-bottom:30px;">Sign up today and get 10 extra daily downloads for free!</p>
+                    <input id="signupEmail" placeholder="Enter your email" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:15px;" type="email"/>
+                    <button class="btn-started" onclick="simulatedSignup()" style="width:100%;">Create Account</button>
+                    <p onclick="closeModal()" style="margin-top:20px; font-size:0.8rem; cursor:pointer; color:#94a3b8;">Maybe later</p>
                 </div>
             </div>
 
-            <div class='footer-bottom'>
-                <p>&copy; 2024 InstaStream Pro AI. Built for the community.</p>
-                <div style="display:flex; gap:20px;">
-                    <a href="#" style="color:#64748b; text-decoration:none;">Privacy</a>
-                    <a href="#" style="color:#64748b; text-decoration:none;">Terms</a>
-                    <a href="#" style="color:#64748b; text-decoration:none;">Cookies</a>
-                </div>
+            <!-- Bottom Ad Slot -->
+            <div class='ad-slot' style='margin: 50px auto;'>
+                <span>ADSTERRA FOOTER AD</span>
             </div>
-        </footer>
 
-        <a href="https://api.whatsapp.com/send?text=Check out this awesome Instagram Downloader!" class="float-share" target="_blank">
-            <i class="fab fa-whatsapp"></i> Tell a Friend
-        </a>
+            <footer>
+                <div class='footer-grid'>
+                    <div class='footer-col'>
+                        <a class='logo' href='/' style='color:white; margin-bottom:20px; display:inline-block; font-size:1.4rem;'>
+                            <i class="fab fa-instagram"></i> InstaStream
+                        </a>
+                        <p style='color: #94a3b8; font-size: 0.9rem; line-height: 1.6;'>The world's most intelligent Instagram video downloader. Fast, free, and secure solution for everyone.</p>
+                        <div class="social-links">
+                            <a href="#">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                        </div>
+                    </div>
 
-        <script>
+                    <div class='footer-col'>
+                        <h4>Product</h4>
+                        <ul>
+                            <li>
+                                <a href="#">Reels Downloader</a>
+                            </li>
+                            <li>
+                                <a href="#">Video Downloader</a>
+                            </li>
+                            <li>
+                                <a href="#">Photo Downloader</a>
+                            </li>
+                            <li>
+                                <a href="#">MP3 Converter</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class='footer-col'>
+                        <h4>Support</h4>
+                        <ul>
+                            <li>
+                                <a href="#pricing">Pricing</a>
+                            </li>
+                            <li>
+                                <a href="#">Help Center</a>
+                            </li>
+                            <li>
+                                <a href="#">Contact Us</a>
+                            </li>
+                            <li>
+                                <a href="#">Buy a Coffee</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class='footer-col'>
+                        <h4>Legal</h4>
+                        <ul>
+                            <li>
+                                <a href="#">Privacy Policy</a>
+                            </li>
+                            <li>
+                                <a href="#">Terms of Service</a>
+                            </li>
+                            <li>
+                                <a href="#">Cookie Policy</a>
+                            </li>
+                            <li>
+                                <a href="#">DMCA Notice</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class='footer-bottom'>
+                    <p>&copy; 2024 InstaStream Pro AI. Built for the community.</p>
+                    <div style="display:flex; gap:20px;">
+                        <a href="#" style="color:#64748b; text-decoration:none;">Privacy</a>
+                        <a href="#" style="color:#64748b; text-decoration:none;">Terms</a>
+                        <a href="#" style="color:#64748b; text-decoration:none;">Cookies</a>
+                    </div>
+                </div>
+            </footer>
+
+            <a href="https://api.whatsapp.com/send?text=Check out this awesome Instagram Downloader!" class="float-share" target="_blank">
+                <i class="fab fa-whatsapp"></i> Tell a Friend
+            </a>
+
+            <script>
             // Hiding API and Secrets from simple inspection
             const _0x1a2b = ["aHR0cHM6Ly9hcmdoYS03LWluc3RhLWRvd25sb2FkZXItd2ViLmhmLnNwYWNl", "aW5zdGFfcHJvX2FpX3NlY3VyZV85OQ=="];
             const API_BASE = atob(_0x1a2b[0]);
             const _S = atob(_0x1a2b[1]);
 
-            function getSecureHeaders() {
+            // Initialize Firebase
+            const firebaseConfig = {
+              apiKey: "AIzaSyA7SyWG2xwjGnA9wcKeQmqLwzeZ2J1q09w",
+              authDomain: "instastream-29bd8.firebaseapp.com",
+              projectId: "instastream-29bd8",
+              storageBucket: "instastream-29bd8.firebasestorage.app",
+              messagingSenderId: "245735914604",
+              appId: "1:245735914604:web:07e74c838ad2f895aaec49",
+              measurementId: "G-KVQTQC8E00"
+            };
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const auth = firebase.auth();
+            const provider = new firebase.auth.GoogleAuthProvider();
+
+            // Setup Auth State Listener
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    document.getElementById('authBtn').innerText = 'Logout';
+                    document.getElementById('userProfile').style.display = 'flex';
+                    document.getElementById('userAvatar').src = user.photoURL || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/user-male-icon.png";
+                    updateCredits(); // Fetch balances right after login
+                } else {
+                    document.getElementById('authBtn').innerText = 'Login to Earn';
+                    document.getElementById('userProfile').style.display = 'none';
+                    document.getElementById('navCredits').innerText = '0';
+                    document.getElementById('navBalance').innerText = '0.00';
+                }
+            });
+
+            async function toggleAuth() { // Login/Logout action
+                const user = auth.currentUser;
+                if(user) {
+                    await auth.signOut();
+                    alert("Logged out successfully.");
+                } else {
+                    try {
+                        await auth.signInWithPopup(provider);
+                    } catch(e) {
+                        console.log("Login failed:", e);
+                    }
+                }
+            }
+
+            async function getSecureHeaders() {
+                let token = "";
+                if (auth.currentUser) {
+                    token = await auth.currentUser.getIdToken();
+                }
                 return { 
                     'Content-Type': 'application/json',
-                    'X-App-Secret': _S 
+                    'X-App-Secret': _S,
+                    'Authorization': `Bearer ${token}`
                 };
             }
 
@@ -1054,9 +1110,10 @@
 
                 // 1. Fetch Instant Preview (Wow Factor)
                 try {
+                    const hdrs = await getSecureHeaders();
                     const prevRes = await fetch(`${API_BASE}/preview`, {
                         method: 'POST',
-                        headers: getSecureHeaders(),
+                        headers: hdrs,
                         body: JSON.stringify({ url })
                     });
                     if (prevRes.ok) {
@@ -1073,9 +1130,10 @@
 
                 // 2. Start Actual Download
                 try {
+                    const hdrs = await getSecureHeaders();
                     const response = await fetch(`${API_BASE}/download`, {
                         method: 'POST',
-                        headers: getSecureHeaders(),
+                        headers: hdrs,
                         body: JSON.stringify({ url: url })
                     });
                     const data = await response.json();
@@ -1179,33 +1237,53 @@
 
             async function updateCredits() {
                 try {
+                    const hdrs = await getSecureHeaders();
                     const res = await fetch(`${API_BASE}/check-limit`, {
                         method: 'POST',
-                        headers: getSecureHeaders(),
+                        headers: hdrs,
                         body: JSON.stringify({ ref: refParam })
                     });
                     const data = await res.json();
+                    
+                    if (!data.success === false && data.message && data.message.includes('Unauthorized')) {
+                        // User not logged in, silented fallback handled by UI display
+                        return;
+                    }
+
                     const credits = data.credits || 0;
                     const balance = data.balance || 0;
-                    referralID = data.referral_id;
+                    referralID = data.referral_id || "";
 
-                    document.getElementById('limitText').innerText = `Balance: ${credits} Credits`;
-                    document.getElementById('navCredits').innerText = credits;
-                    document.getElementById('navBalance').innerText = balance.toFixed(2);
-                    document.getElementById('dashBalance').innerText = balance.toFixed(2);
-                    document.getElementById('refUrl').value = `https://argha-7.blogspot.com?ref=${referralID}`;
+                    // limitText does not exist anymore, removing to prevent console errors
+                    const navCre = document.getElementById('navCredits');
+                    if (navCre) navCre.innerText = credits;
+                    const navBal = document.getElementById('navBalance');
+                    if (navBal) navBal.innerText = balance.toFixed(2);
+                    const dashBal = document.getElementById('dashBalance');
+                    if (dashBal) dashBal.innerText = balance.toFixed(2);
+                    const refInp = document.getElementById('refUrl');
+                    if (refInp && referralID) refInp.value = `https://argha-7.blogspot.com?ref=${referralID}`;
                     
-                    if (credits < 10) {
-                        document.getElementById('walletDisplay').style.background = 'rgba(239, 68, 68, 0.1)';
-                    } else {
-                        document.getElementById('walletDisplay').style.background = 'rgba(59, 130, 246, 0.1)';
+                    const wd = document.getElementById('walletDisplay');
+                    if (wd) {
+                        if (credits < 10) {
+                            wd.style.background = 'rgba(239, 68, 68, 0.1)';
+                        } else {
+                            wd.style.background = 'rgba(59, 130, 246, 0.1)';
+                        }
                     }
                 } catch (e) {
                     console.error("Credit fetch failed");
                 }
             }
 
-            function openDashboard() { document.getElementById('dashModal').style.display = 'flex'; }
+            function openDashboard() { 
+                if(!auth.currentUser) {
+                    alert("Please Login with Google to view your earnings!");
+                    return;
+                }
+                document.getElementById('dashModal').style.display = 'flex'; 
+            }
             function closeDashboard() { document.getElementById('dashModal').style.display = 'none'; }
             function copyRef() {
                 const copyText = document.getElementById("refUrl");
@@ -1219,9 +1297,10 @@
                 if (!upi.includes('@')) { alert('Please enter valid UPI ID'); return; }
                 
                 try {
+                    const hdrs = await getSecureHeaders();
                     const res = await fetch(`${API_BASE}/withdraw`, {
                         method: 'POST',
-                        headers: getSecureHeaders(),
+                        headers: hdrs,
                         body: JSON.stringify({ upi_id: upi })
                     });
                     const data = await res.json();
@@ -1234,10 +1313,12 @@
             async function claimReward() {
                 // Short delay to ensure they click the link
                 setTimeout(async () => {
+                    if (!auth.currentUser) return; // Must be logged in to earn
                     try {
+                        const hdrs = await getSecureHeaders();
                         const res = await fetch(`${API_BASE}/reward-share`, {
                             method: 'POST',
-                            headers: getSecureHeaders(),
+                            headers: hdrs,
                             body: JSON.stringify({})
                         });
                         const data = await res.json();
@@ -1253,6 +1334,7 @@
                     }
                 }, 2000);
             }
+
 
             updateCredits();
 

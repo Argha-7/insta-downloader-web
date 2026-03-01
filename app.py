@@ -4,6 +4,9 @@ import threading
 import yt_dlp
 import requests
 import uuid
+import firebase_admin
+from firebase_admin import credentials, auth
+
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -12,6 +15,15 @@ from flask_limiter.util import get_remote_address
 app = Flask(__name__)
 # Simplified CORS for debugging - allows all origins and headers temporarily
 CORS(app)
+
+# Initialize Firebase Admin
+try:
+    # This will use the GOOGLE_APPLICATION_CREDENTIALS env var
+    # Provide a placeholder dict to prevent crashing locally while testing
+    firebase_admin.initialize_app()
+    print("Firebase Admin initialized successfully.")
+except Exception as e:
+    print(f"Warning: Firebase Admin init failed (usually missing credentials): {e}")
 
 # SECURITY CONFIG
 ALLOWED_ORIGINS = [
@@ -24,13 +36,23 @@ APP_SECRET = "insta_pro_ai_secure_99" # Simple secret key
 def verify_request():
     """Verify that the request comes from our site and has the secret."""
     secret = request.headers.get('X-App-Secret')
-    print(f"DEBUG: Headers received: {dict(request.headers)}")
-    print(f"DEBUG: Secret received: {secret}")
-    
     if secret != APP_SECRET:
         print("DEBUG: Secret mismatch!")
         return False
     return True
+
+def verify_firebase_token():
+    """Extracts and verifies the Firebase ID token from the Authorization header."""
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split('Bearer ')[1]
+        try:
+            decoded_token = auth.verify_id_token(token)
+            return decoded_token['uid']
+        except Exception as e:
+            print(f"DEBUG: Token verification failed: {e}")
+            return None
+    return None
 
 # Rate Limiter setup (Prevents abuse)
 limiter = Limiter(
@@ -57,13 +79,13 @@ REFERRAL_CASH_REWARD = 2.00  # ₹2.00 per new referral
 def generate_ref_id():
     return str(uuid.uuid4())[:8]
 
-def get_user_data(ip):
+def get_user_data(uid):
     """Helper to get or initialize user data with referral tracking."""
-    if ip not in user_credits:
+    if uid not in user_credits:
         # Check if the request contains a referral ID
         ref_id = request.json.get('ref') if request.is_json else request.args.get('ref')
         
-        user_credits[ip] = {
+        user_credits[uid] = {
             'credits': DEFAULT_CREDITS, 
             'balance': 0.0,
             'referral_id': generate_ref_id(),
@@ -72,13 +94,13 @@ def get_user_data(ip):
         
         # Reward the referrer if valid
         if ref_id:
-            for other_ip, data in user_credits.items():
-                if data['referral_id'] == ref_id and other_ip != ip:
+            for other_uid, data in user_credits.items():
+                if data['referral_id'] == ref_id and other_uid != uid:
                     data['balance'] += REFERRAL_CASH_REWARD
-                    print(f"REFERRAL REWARD: {other_ip} earned ₹{REFERRAL_CASH_REWARD} for referring {ip}")
+                    print(f"REFERRAL REWARD: {other_uid} earned ₹{REFERRAL_CASH_REWARD} for referring {uid}")
                     break
                     
-    return user_credits[ip]
+    return user_credits[uid]
 job_status = {}
 
 # Cleanup task to delete files older than 20 minutes
@@ -187,8 +209,12 @@ def index():
 def handle_download():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
-    ip = get_remote_address()
-    user_data = get_user_data(ip)
+        
+    uid = verify_firebase_token()
+    if not uid:
+        uid = get_remote_address()
+        
+    user_data = get_user_data(uid)
     
     if user_data['credits'] < DOWNLOAD_COST:
         return jsonify({'success': False, 'message': f'Insufficient credits ({user_data["credits"]}). Share on WhatsApp to earn more!'}), 403
@@ -233,8 +259,12 @@ def handle_download():
 def check_limit():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
-    ip = get_remote_address()
-    user_data = get_user_data(ip)
+        
+    uid = verify_firebase_token()
+    if not uid:
+        uid = get_remote_address()
+         
+    user_data = get_user_data(uid)
     return jsonify({
         'credits': user_data['credits'],
         'balance': round(user_data['balance'], 2),
@@ -248,15 +278,19 @@ def handle_withdraw():
     """Placeholder for withdrawal requests."""
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
-    ip = get_remote_address()
-    user_data = get_user_data(ip)
+        
+    uid = verify_firebase_token()
+    if not uid:
+        uid = get_remote_address()
+        
+    user_data = get_user_data(uid)
     upi_id = request.json.get('upi_id')
     
     if user_data['balance'] < 50:
         return jsonify({'success': False, 'message': 'Minimum withdrawal is ₹50.00'}), 400
         
     # In a real app, you'd save this to a database
-    print(f"WITHDRAW REQUEST: User {ip} requested withdrawal of ₹{user_data['balance']} to UPI: {upi_id}")
+    print(f"WITHDRAW REQUEST: User {uid} requested withdrawal of ₹{user_data['balance']} to UPI: {upi_id}")
     return jsonify({'success': True, 'message': 'Withdrawal request sent! We will process it within 24 hours.'})
 
 @app.route('/reward-share', methods=['POST'])
@@ -264,8 +298,12 @@ def reward_share():
     """Reward user for sharing the site."""
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
-    ip = get_remote_address()
-    user_data = get_user_data(ip)
+        
+    uid = verify_firebase_token()
+    if not uid:
+        uid = get_remote_address()
+        
+    user_data = get_user_data(uid)
     user_data['credits'] += SHARE_REWARD
     return jsonify({
         'success': True,
