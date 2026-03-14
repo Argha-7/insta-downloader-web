@@ -521,20 +521,24 @@
                 padding: 35px;
                 box-shadow: var(--shadow);
                 display: flex;
-                gap: 30px;
-                text-align: left;
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
                 align-items: center;
                 border: 1px solid var(--glass-border);
                 margin-bottom: 20px;
             }
 
             .res-thumb {
-                width: 140px;
-                height: 140px;
-                border-radius: 8px;
+                width: 100%;
+                max-width: 400px;
+                height: auto;
+                min-height: 250px;
+                border-radius: 15px;
                 object-fit: cover;
                 background: #f1f5f9;
                 animation: pulse-bg 1.5s infinite;
+                margin: 0 auto;
             }
 
             @keyframes pulse-bg {
@@ -581,18 +585,29 @@
             }
             .btn-copy-link:hover { background: #f5f3ff; }
 
-            .success-banner {
-                background: #d1fae5;
-                color: #065f46;
-                padding: 15px;
-                border-radius: 8px;
-                font-size: 0.95rem;
+            .btn-server {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 10px;
+                gap: 12px;
+                width: 100%;
+                max-width: 300px;
+                padding: 12px 25px;
+                background: white;
+                color: #3b82f6;
+                border: 1.5px solid #3b82f6;
+                border-radius: 10px;
                 font-weight: 500;
+                text-decoration: none;
+                transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                margin: 5px auto;
             }
+            .btn-server:hover {
+                background: #eff6ff;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+            }
+            .btn-server i { font-size: 1.1rem; }
 
             /* Features Section */
             .features {
@@ -881,25 +896,28 @@
 
         <div id='result'>
             <div class='result-card'>
-                <img class='res-thumb' id='resThumb' onerror='handlePreviewError(this)' src=''/>
-                <div class='res-info'>
-                    <div class='res-title' id='resTitle'>Video Title</div>
-                    <div class='res-meta' id='resMeta'>Ready for download</div>
+                <div class='res-title' id='resTitle' style="font-size: 1.4rem; margin-bottom: 5px;">INSTAGRAM VIDEO</div>
+                <div class='res-meta' id='resMeta' style="margin-bottom: 20px;">Ready for download</div>
+
+                <!-- Video Preview Box -->
+                <div id="resThumbContainer" style="width: 100%; display: flex; justify-content: center; margin-bottom: 25px;">
+                    <img class='res-thumb' id='resThumb' onerror='handlePreviewError(this)' src=''/>
+                </div>
+
+                <!-- Server Buttons -->
+                <div style="width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: center;">
+                    <a class='btn-server' id='qualityHD' target='_blank' title="Download in 1080p Full HD">
+                        <i class="fas fa-download"></i> Download Server 1
+                    </a>
+                    <a class='btn-server' id='qualitySD' target='_blank' title="Download in 720p HD">
+                        <i class="fas fa-download"></i> Download Server 2
+                    </a>
                     
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;">
-                        <a class='btn-download-final' id='downloadLink' style="flex: 1 1 100%;" target='_blank'>
-                            <i class='fas fa-download'></i> Download Video
+                    <div style="display: flex; gap: 10px; width: 100%; max-width: 300px; margin-top: 10px;">
+                        <a class='btn-outline' id='qualityThumb' style="flex: 1; padding: 10px; font-size: 0.8rem; border-radius: 10px;" target='_blank'>
+                            <i class='far fa-image'></i> Thumbnail
                         </a>
-                        <a class='btn-outline' id='qualityHD' style="flex: 1; padding: 12px; font-size: 0.8rem; border-color: var(--primary); color: var(--primary);" target='_blank'>
-                            <i class='fas fa-tv'></i> 1080p HD
-                        </a>
-                        <a class='btn-outline' id='qualitySD' style="flex: 1; padding: 12px; font-size: 0.8rem; border-color: #64748b; color: #64748b;" target='_blank'>
-                            <i class='fas fa-mobile-alt'></i> 720p
-                        </a>
-                        <a class='btn-outline' id='qualityThumb' style="flex: 1; padding: 12px; font-size: 0.8rem; border-color: #f09433; color: #f09433;" target='_blank'>
-                            <i class='far fa-image'></i> Thumb
-                        </a>
-                        <button class='btn-copy-link' onclick='copyLink()' style="flex: 1 1 100%;">
+                        <button class='btn-copy-link' onclick='copyLink()' style="flex: 1; padding: 10px; font-size: 0.8rem; border-radius: 10px; border-width: 1.5px;">
                             <i class='far fa-clone'></i> Copy Link
                         </button>
                     </div>
@@ -1029,7 +1047,7 @@
                 </div>
                 <ul>
                     <li>
-                        <i class="fas fa-check"></i> 10 Daily Downloads</li>
+                        <i class="fas fa-check"></i> 20 Daily Downloads</li>
                     <li>
                         <i class="fas fa-check"></i> HD Quality Video</li>
                     <li>
@@ -1429,56 +1447,76 @@
                 const res = document.getElementById('result');
                 res.style.display = 'block';
                 
-                document.getElementById('resTitle').innerText = data.title || "Instagram Video";
+                document.getElementById('resTitle').innerText = data.title || "INSTAGRAM VIDEO";
                 
                 const thumbUrl = data.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png";
+                // Priority for video preview
                 const videoUrl = data.video_url || (currentMetadata ? currentMetadata.video_url : null);
                 
                 if (videoUrl) {
                     showVideoPreview('resThumb', videoUrl);
                 } else {
                     const thumbImg = document.getElementById('resThumb');
-                    if (thumbImg && thumbImg.tagName === 'IMG') {
-                        thumbImg.src = thumbUrl;
-                    } else if (thumbImg) {
-                        // If it was already replaced by a video but now we only have a thumb
-                        const newImg = document.createElement('img');
-                        newImg.id = 'resThumb';
-                        newImg.className = 'res-thumb';
-                        newImg.src = thumbUrl;
-                        newImg.onerror = function() { handlePreviewError(this); };
-                        thumbImg.replaceWith(newImg);
+                    if (thumbImg) {
+                        if (thumbImg.tagName === 'IMG') {
+                            thumbImg.src = thumbUrl;
+                        } else {
+                            // If it was already replaced by a video, rebuild the image
+                            const newImg = document.createElement('img');
+                            newImg.id = 'resThumb';
+                            newImg.className = 'res-thumb';
+                            newImg.src = thumbUrl;
+                            newImg.onerror = function() { handlePreviewError(this); };
+                            thumbImg.replaceWith(newImg);
+                        }
+                    }
+                }
+
+                // Populate Server Buttons (Merge from metadata and actual data)
+                const q = data.qualities || (currentMetadata ? currentMetadata.qualities : null);
+                if (q) {
+                    const s1 = document.getElementById('qualityHD');
+                    const s2 = document.getElementById('qualitySD');
+                    const t = document.getElementById('qualityThumb');
+
+                    if (q['1080p']) {
+                        s1.href = q['1080p'];
+                        s1.style.display = 'flex';
+                    } else if (data.filename) {
+                        // Fallback to primary download link if HD quality link not extracted
+                        s1.href = `${API_BASE}/files/${data.filename}`;
+                        s1.style.display = 'flex';
+                    } else {
+                        s1.style.display = 'none';
+                    }
+
+                    if (q['720p']) {
+                        s2.href = q['720p'];
+                        s2.style.display = 'flex';
+                    } else if (q['1080p']) {
+                        // If 720p missing but 1080p there, share it as server 2
+                        s2.href = q['1080p'];
+                        s2.style.display = 'flex';
+                    } else if (data.filename) {
+                        s2.href = `${API_BASE}/files/${data.filename}`;
+                        s2.style.display = 'flex';
+                    } else {
+                        s2.style.display = 'none';
+                    }
+
+                    if (q['thumb']) {
+                        t.href = q['thumb'];
+                        t.style.display = 'flex';
+                    } else if (data.thumbnail) {
+                        t.href = data.thumbnail;
+                        t.style.display = 'flex';
+                    } else {
+                        t.style.display = 'none';
                     }
                 }
                 
-                document.getElementById('downloadLink').href = `${API_BASE}/files/${data.filename}`;
-
-                // Populate Quality Buttons (Merge from metadata and actual data)
-                const q = data.qualities || (currentMetadata ? currentMetadata.qualities : null);
-                if (q) {
-                    const hdBtn = document.getElementById('qualityHD');
-                    const sdBtn = document.getElementById('qualitySD');
-                    const thumbBtn = document.getElementById('qualityThumb');
-
-                    if (q['1080p']) {
-                        hdBtn.href = q['1080p'];
-                        hdBtn.style.display = 'flex';
-                    } else { hdBtn.style.display = 'none'; }
-
-                    if (q['720p']) {
-                        sdBtn.href = q['720p'];
-                        sdBtn.style.display = 'flex';
-                    } else { sdBtn.style.display = 'none'; }
-
-                    if (q['thumb']) {
-                        thumbBtn.href = q['thumb'];
-                        thumbBtn.style.display = 'flex';
-                    } else { thumbBtn.style.display = 'none'; }
-                }
-                
                 // Refresh limits
-                if(typeof updateLimits === 'function') updateLimits();
-                
+                updateCredits();
                 resetBtn();
             }
 
