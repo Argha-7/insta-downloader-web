@@ -1607,7 +1607,7 @@
             // Limit & Points & referral Logic
             let referralID = "";
             
-
+            async function updateCredits() {
                 try {
                     const res = await fetch(`${API_BASE}/check-limit?s=${_S}`, {
                         method: 'POST',
