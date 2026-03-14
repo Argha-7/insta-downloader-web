@@ -354,6 +354,7 @@ def handle_download():
             'thumbnail': proxy_thumb,
             'credits': user_data['credits'],
             'balance': round(user_data['balance'], 2),
+            'video_url': result.get('hd_url') or result.get('sd_url'),
             'qualities': {
                 '1080p': get_dl_url(result.get('hd_url'), "1080p.mp4"),
                 '720p': get_dl_url(result.get('sd_url'), "720p.mp4"),

@@ -497,7 +497,7 @@
             }
 
             .progress-header { display: flex; gap: 20px; align-items: center; margin-bottom: 10px; }
-            .prog-thumb { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #eee; }
+            .prog-thumb { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #eee; animation: pulse-bg 1.5s infinite; }
             .prog-info { flex: 1; }
             .prog-title { font-weight: 700; color: var(--dark); font-size: 1rem; }
 
@@ -534,6 +534,13 @@
                 border-radius: 8px;
                 object-fit: cover;
                 background: #f1f5f9;
+                animation: pulse-bg 1.5s infinite;
+            }
+
+            @keyframes pulse-bg {
+                0% { background: #f0f4f8; }
+                50% { background: #e2e8f0; }
+                100% { background: #f0f4f8; }
             }
 
             .res-info { flex: 1; }
@@ -1403,7 +1410,8 @@
                             showSuccess({
                                 filename: data.filename,
                                 title: currentMetadata.title || "Instagram Video",
-                                thumbnail: currentMetadata.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"
+                                thumbnail: currentMetadata.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png",
+                                video_url: currentMetadata.video_url // Ensure video_url is passed
                             });
                         } else {
                             statusText.innerText = `Video Processing... (${count * 5}s)`;
@@ -1419,7 +1427,27 @@
                 res.style.display = 'block';
                 
                 document.getElementById('resTitle').innerText = data.title || "Instagram Video";
-                document.getElementById('resThumb').src = data.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png";
+                
+                const thumbUrl = data.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png";
+                const videoUrl = data.video_url || (currentMetadata ? currentMetadata.video_url : null);
+                
+                if (videoUrl) {
+                    showVideoPreview('resThumb', videoUrl);
+                } else {
+                    const thumbImg = document.getElementById('resThumb');
+                    if (thumbImg && thumbImg.tagName === 'IMG') {
+                        thumbImg.src = thumbUrl;
+                    } else if (thumbImg) {
+                        // If it was already replaced by a video but now we only have a thumb
+                        const newImg = document.createElement('img');
+                        newImg.id = 'resThumb';
+                        newImg.className = 'res-thumb';
+                        newImg.src = thumbUrl;
+                        newImg.onerror = function() { handlePreviewError(this); };
+                        thumbImg.replaceWith(newImg);
+                    }
+                }
+                
                 document.getElementById('downloadLink').href = `${API_BASE}/files/${data.filename}`;
 
                 // Populate Quality Buttons (Merge from metadata and actual data)
