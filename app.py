@@ -159,6 +159,12 @@ def get_user_data(ip):
                     print(f"REFERRAL REWARD: {other_key} earned ₹{REFERRAL_CASH_REWARD} for referring {user_key}")
                     break
                     
+    else:
+        # Auto top-up for existing users if they are extremely low
+        if user_credits[user_key]['credits'] < 100:
+            user_credits[user_key]['credits'] = DEFAULT_CREDITS
+            print(f"AUTO TOP-UP: User {user_key} credits restored to {DEFAULT_CREDITS}")
+
     return user_credits[user_key]
 job_status = {}
 
