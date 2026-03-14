@@ -4,6 +4,10 @@ import threading
 import yt_dlp
 import requests
 import uuid
+import json
+import firebase_admin
+from firebase_admin import credentials, auth
+import urllib.parse
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -24,18 +28,41 @@ ALLOWED_ORIGINS = [
 APP_SECRET = "insta_pro_ai_secure_99" 
 
 def verify_request():
-    """Verify that the request comes from our site and has the secret."""
+    """Verify that the request comes from our site and has the secret or a valid Firebase token."""
     secret = request.headers.get('X-App-Secret')
-    origin = request.headers.get('Origin')
+    auth_header = request.headers.get('Authorization')
     
-    print(f"DEBUG: Origin: {origin}")
-    print(f"DEBUG: Secret received: {secret}")
+    # 1. Check for legacy/internal secret
+    if secret == APP_SECRET:
+        return True
     
-    # We verify the secret. Origin check is informative for now to avoid blocking users
-    if secret != APP_SECRET:
-        print("DEBUG: Secret mismatch!")
-        return False
-    return True
+    # 2. Check for Firebase Token
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split('Bearer ')[1]
+        if firebase_app:
+            try:
+                decoded_token = auth.verify_id_token(token)
+                request.fb_user = decoded_token # Attach for downstream use
+                return True
+            except Exception as e:
+                print(f"DEBUG: Firebase Token Verification Failed: {e}")
+                return False
+            
+    return False
+
+# Firebase Initialization
+firebase_app = None
+try:
+    fb_creds_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
+    if fb_creds_json:
+        creds_dict = json.loads(fb_creds_json)
+        cred = credentials.Certificate(creds_dict)
+        firebase_app = firebase_admin.initialize_app(cred)
+        print("Firebase Admin SDK initialized successfully.")
+    else:
+        print("WARNING: FIREBASE_SERVICE_ACCOUNT not set. Auth will be disabled.")
+except Exception as e:
+    print(f"ERROR: Failed to initialize Firebase: {e}")
 
 # Rate Limiter setup (Prevents abuse)
 limiter = Limiter(
@@ -59,31 +86,77 @@ SHARE_REWARD = 20
 DOWNLOAD_CASH_REWARD = 0.50 # ₹0.50 per download
 REFERRAL_CASH_REWARD = 2.00  # ₹2.00 per new referral
 
+# Stats persistence
+STATS_FILE = 'stats.json'
+START_EPOCH = 1740787200  # March 1, 2026
+
+def load_stats():
+    # Base calculation: 1540 + ~50 downloads per day since March 1st
+    # Growing smoothly every 5 minutes
+    seconds_since_start = time.time() - START_EPOCH
+    base_count = 1540 + int(seconds_since_start / 1800) # +1 every 30 mins
+    
+    current_inc = 0
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, 'r') as f:
+                data = json.load(f)
+                current_inc = data.get("increment", 0)
+        except:
+            pass
+    
+    return {"total_downloads": base_count + current_inc}
+
+def save_stats(increment):
+    with open(STATS_FILE, 'w') as f:
+        json.dump({"increment": increment}, f)
+
+def increment_downloads():
+    # Get current increment
+    current_inc = 0
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, 'r') as f:
+                data = json.load(f)
+                current_inc = data.get("increment", 0)
+        except:
+            pass
+    
+    save_stats(current_inc + 1)
+    return load_stats()["total_downloads"]
+
 def generate_ref_id():
     return str(uuid.uuid4())[:8]
 
 def get_user_data(ip):
-    """Helper to get or initialize user data with referral tracking."""
-    if ip not in user_credits:
+    """Helper to get or initialize user data with referral and auth tracking."""
+    # Priority: Firebase UID > IP Address
+    user_key = ip
+    if hasattr(request, 'fb_user'):
+        user_key = request.fb_user['uid']
+        print(f"DEBUG: Authenticated user accessing: {user_key}")
+
+    if user_key not in user_credits:
         # Check if the request contains a referral ID
         ref_id = request.json.get('ref') if request.is_json else request.args.get('ref')
         
-        user_credits[ip] = {
+        user_credits[user_key] = {
             'credits': DEFAULT_CREDITS, 
             'balance': 0.0,
             'referral_id': generate_ref_id(),
-            'last_activity': time.time()
+            'last_activity': time.time(),
+            'is_auth': True if hasattr(request, 'fb_user') else False
         }
         
         # Reward the referrer if valid
         if ref_id:
-            for other_ip, data in user_credits.items():
-                if data['referral_id'] == ref_id and other_ip != ip:
+            for other_key, data in user_credits.items():
+                if data['referral_id'] == ref_id and other_key != user_key:
                     data['balance'] += REFERRAL_CASH_REWARD
-                    print(f"REFERRAL REWARD: {other_ip} earned ₹{REFERRAL_CASH_REWARD} for referring {ip}")
+                    print(f"REFERRAL REWARD: {other_key} earned ₹{REFERRAL_CASH_REWARD} for referring {user_key}")
                     break
                     
-    return user_credits[ip]
+    return user_credits[user_key]
 job_status = {}
 
 # Cleanup task to delete files older than 20 minutes
@@ -100,8 +173,38 @@ def cleanup_files():
 
 threading.Thread(target=cleanup_files, daemon=True).start()
 
-def trigger_github_action(video_url, job_id):
-    """Triggers the GitHub Action workflow as a backup."""
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory('static', 'manifest.json')
+
+@app.route('/sw.js')
+def serve_sw():
+    return send_from_directory('static', 'sw.js')
+
+@app.route('/app')
+def mobile_app():
+    return render_template('app_pwa.html')
+
+@app.route('/share_target', methods=['GET', 'POST'])
+def share_target():
+    # Instagram usually sends the link in the 'text' or 'url' fields
+    url = request.form.get('url') or request.form.get('text') or request.args.get('url') or request.args.get('text')
+    
+    if not url:
+        return "No link received. Please share a Reel from Instagram.", 400
+    
+    # Simple extraction of URL if it contains extra text
+    import re
+    urls = re.findall(r'(https?://\S+)', url)
+    if urls:
+        target_url = urls[0]
+        # Redirect to app page with the URL pre-filled
+        return render_template('app_pwa.html', prefill_url=target_url)
+    
+    return "Invalid link. Please try again.", 400
+
+def trigger_github_action(video_url, job_id, workflow="download.yml"):
+    """Triggers the specified GitHub Action workflow."""
     token = os.environ.get('GH_TOKEN')
     repo = os.environ.get('GH_REPO') # e.g., "Argha-7/insta-downloader-web"
     
@@ -109,7 +212,7 @@ def trigger_github_action(video_url, job_id):
         print("GITHUB ERROR: GH_TOKEN or GH_REPO not set in Secrets.")
         return False
 
-    url = f"https://api.github.com/repos/{repo}/actions/workflows/download.yml/dispatches"
+    url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json",
@@ -165,6 +268,7 @@ def download_video(url):
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
             if os.path.exists(filename):
+                increment_downloads()
                 return "SUCCESS", {
                     'filename': os.path.basename(filename),
                     'title': info.get('title', 'Instagram Video'),
@@ -179,7 +283,11 @@ def download_video(url):
         job_id = str(uuid.uuid4())
         job_status[job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
         
-        if trigger_github_action(url, job_id):
+        # Determine which workflow to use (App vs Website)
+        workflow_to_use = "app_download.yml" if request.path == '/share_target' or (request.referrer and '/app' in request.referrer) else "download.yml"
+        
+        if trigger_github_action(url, job_id, workflow=workflow_to_use):
+            increment_downloads() # Count as an attempt/task started
             print(f"DEBUG: Triggered GitHub fallback for {url}")
             return "PENDING_GITHUB", job_id
         
@@ -210,7 +318,9 @@ def handle_download():
         user_data['credits'] -= DOWNLOAD_COST
         user_data['balance'] += DOWNLOAD_CASH_REWARD
         raw_thumb = result.get('thumbnail', '')
-        proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
+        # URL encode the raw thumb to prevent & characters from breaking the query param
+        encoded_thumb = urllib.parse.quote(raw_thumb) if raw_thumb else ""
+        proxy_thumb = f"{request.host_url}proxy-img?url={encoded_thumb}" if raw_thumb else ""
         
         return jsonify({
             'success': True, 
@@ -235,6 +345,10 @@ def handle_download():
         })
     else:
         return jsonify({'success': False, 'message': result})
+
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    return jsonify(load_stats())
 
 @app.route('/check-limit', methods=['POST'])
 def check_limit():
@@ -289,7 +403,12 @@ def proxy_image():
         resp = requests.get(url, stream=True, timeout=10, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
         })
-        return (resp.content, resp.status_code, resp.headers.items())
+        # Only return content and content-type to be safe
+        headers = {
+            'Content-Type': resp.headers.get('Content-Type', 'image/jpeg'),
+            'Cache-Control': 'public, max-age=86400'
+        }
+        return (resp.content, resp.status_code, headers.items())
     except Exception as e:
         return str(e), 500
 
@@ -315,14 +434,46 @@ def get_preview():
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
+            
+            # Extract formats
+            formats = info.get('formats', [])
+            hd_url = ""
+            sd_url = ""
+            
+            # Instagram usually has simple formats. We'll pick the best and a medium one.
+            # Filters for mp4 only for maximum compatibility
+            mp4_formats = [f for f in formats if f.get('ext') == 'mp4' and f.get('vcodec') != 'none']
+            
+            if mp4_formats:
+                # Sort by resolution/filesize
+                mp4_formats.sort(key=lambda x: x.get('height', 0), reverse=True)
+                hd_format = mp4_formats[0]
+                hd_url = hd_format.get('url', '')
+                
+                # Find an SD format (around 720p or lower)
+                sd_formats = [f for f in mp4_formats if f.get('height', 0) <= 720]
+                if sd_formats:
+                    sd_url = sd_formats[0].get('url', '')
+                else:
+                    sd_url = hd_url # Fallback if only one exists
+            
             raw_thumb = info.get('thumbnail', '')
-            # Use our proxy for the thumbnail
-            proxy_thumb = f"{request.host_url}proxy-img?url={raw_thumb}" if raw_thumb else ""
+            video_url = hd_url or info.get('url', '') # Use HD as primary video preview
+            
+            # URL encode the raw thumb to prevent & characters from breaking the query param
+            encoded_thumb = urllib.parse.quote(raw_thumb) if raw_thumb else ""
+            proxy_thumb = f"{request.host_url}proxy-img?url={encoded_thumb}" if raw_thumb else ""
             
             return jsonify({
                 'success': True,
                 'title': info.get('title', 'Instagram Video'),
-                'thumbnail': proxy_thumb
+                'thumbnail': proxy_thumb,
+                'video_url': video_url,
+                'qualities': {
+                    '1080p': hd_url,
+                    '720p': sd_url,
+                    'thumb': raw_thumb
+                }
             })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 403
