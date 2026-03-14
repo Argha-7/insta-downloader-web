@@ -118,7 +118,7 @@
                 height: auto !important;
             }
             @media (max-width: 480px) {
-                .ad-slot { margin: 15px auto; min-height: 250px; }
+                .ad-slot { margin: 10px auto; min-height: 100px; }
             }
 
             /* Navbar */
@@ -741,12 +741,14 @@
             @media (max-width: 768px) {
                 .navbar { padding: 1rem 5%; }
                 .nav-links { display: none !important; } /* Hide links on mobile for simplicity */
-                .search-card { flex-direction: column; height: auto; padding: 10px; border-radius: 18px; }
-                .search-card input { padding: 15px; text-align: center; }
-                .btn-action { padding: 18px; width: 100%; border-radius: 15px; }
-                .hero { padding: 60px 15px; }
-                .hero h1 { font-size: 2.2rem; }
-                .hero p { font-size: 1rem; }
+                .search-card { flex-direction: column; height: auto; padding: 10px; border-radius: 18px; margin-top: 20px; }
+                .search-card input { padding: 12px; text-align: center; font-size: 1rem; }
+                .btn-action { padding: 15px; width: 100%; border-radius: 12px; }
+                .hero { padding: 20px 15px 60px; }
+                .hero h1 { font-size: 2rem; margin-bottom: 15px !important; letter-spacing: -1px; }
+                .hero p { display: none; } /* Hide description on mobile to save space */
+                .live-badge { margin-bottom: 15px; padding: 8px 15px; font-size: 0.8rem; }
+                .limit-badge { margin-bottom: 10px; }
                 
                 .result-card {
                     flex-direction: column;
