@@ -137,21 +137,15 @@ def get_client_ip():
 def generate_ref_id():
     return str(uuid.uuid4())[:8]
 
-def get_user_data(ip):
+def get_user_data(ip, gift=None):
     """Helper to get or initialize user data with referral and auth tracking."""
     # Priority: Firebase UID > IP Address
     user_key = ip
     if hasattr(request, 'fb_user'):
         user_key = request.fb_user['uid']
     
-    # Extract gift parameter from any possible source
-    gift = None
-    if request.is_json:
-        try:
-            gift = request.json.get('gift')
-        except: pass
-    if not gift:
-        gift = request.args.get('gift') or request.form.get('gift')
+    # Aggressive Logging
+    print(f"DEBUG: get_user_data(key={user_key}, ip={ip}, gift={gift})")
 
     if user_key not in user_credits:
         initial_credits = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
@@ -166,26 +160,23 @@ def get_user_data(ip):
             'last_activity': time.time(),
             'is_auth': True if hasattr(request, 'fb_user') else False
         }
-        
-        print(f"DEBUG: NEW USER {user_key} - Credits: {initial_credits} (Gift: {gift})")
+        print(f"DEBUG: NEW USER {user_key} initialized with {initial_credits}")
 
         # Reward the referrer if valid
         if ref_id:
             for other_key, data in user_credits.items():
                 if data['referral_id'] == ref_id and other_key != user_key:
                     data['balance'] += REFERRAL_CASH_REWARD
-                    print(f"REFERRAL REWARD: {other_key} earned ₹{REFERRAL_CASH_REWARD} for referring {user_key}")
+                    print(f"REFERRAL REWARD: {other_key} earned ₹{REFERRAL_CASH_REWARD}")
                     break
                     
-    else:
-        # Mandatory top-up if user is extremely low (< 50) 
-        # OR if they just provided the gift link
-        old_credits = user_credits[user_key]['credits']
-        target = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
-        
-        if old_credits < 50 or gift == 'bonus100':
-            user_credits[user_key]['credits'] = target
-            print(f"DEBUG: REFRESH USER {user_key} - Credits: {old_credits} -> {target} (Gift: {gift})")
+    # Aggressive Reset Logic: Always check if the user needs more credits
+    target = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
+    old_credits = user_credits[user_key]['credits']
+    
+    if old_credits < 50 or gift == 'bonus100':
+        user_credits[user_key]['credits'] = target
+        print(f"DEBUG: REFRESHED {user_key} credits: {old_credits} -> {target}")
 
     user_credits[user_key]['last_activity'] = time.time()
     return user_credits[user_key]
@@ -351,8 +342,12 @@ def index():
 def handle_download():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
+    
+    # Extract gift parameter early
+    gift = request.json.get('gift') if request.is_json else request.args.get('gift') or request.form.get('gift')
+    
     ip = get_client_ip()
-    user_data = get_user_data(ip)
+    user_data = get_user_data(ip, gift=gift)
     
     if user_data['credits'] < DOWNLOAD_COST:
         return jsonify({'success': False, 'message': f'Insufficient credits ({user_data["credits"]}). Share on WhatsApp to earn more!'}), 403
@@ -420,8 +415,10 @@ def get_stats():
 def check_limit():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
+    
+    gift = request.json.get('gift') if request.is_json else request.args.get('gift') or request.form.get('gift')
     ip = get_client_ip()
-    user_data = get_user_data(ip)
+    user_data = get_user_data(ip, gift=gift)
     return jsonify({
         'credits': user_data['credits'],
         'balance': round(user_data['balance'], 2),
@@ -451,7 +448,7 @@ def reward_share():
     """Reward user for sharing the site."""
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
-    ip = get_remote_address()
+    ip = get_client_ip()
     user_data = get_user_data(ip)
     user_data['credits'] += SHARE_REWARD
     return jsonify({
@@ -551,6 +548,10 @@ def get_preview():
                     sd_url = hd_url # Fallback if only one exists
             
             raw_thumb = info.get('thumbnail', '')
+            # URL encode the raw thumb to prevent & characters from breaking the query param
+            encoded_thumb = urllib.parse.quote(raw_thumb) if raw_thumb else ""
+            proxy_thumb = f"{request.host_url}proxy-img?url={encoded_thumb}" if raw_thumb else ""
+            
             video_url = hd_url or info.get('url', '') # Use HD as primary video preview
             
             # Use our proxy for qualities to ensure "Force Download"
