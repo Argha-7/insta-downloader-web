@@ -1534,16 +1534,17 @@
 
                 // PRIORITY 1: Local File (GitHub or successful HF download)
                 if (data.filename) {
-                    s1.href = `${API_BASE}/files/${data.filename}`;
+                    const localUrl = `${API_BASE}/files/${data.filename}`;
+                    s1.href = `${API_BASE}/dl-proxy?url=${encodeURIComponent(localUrl)}&name=${encodeURIComponent(data.filename)}`;
                     s1.innerHTML = '<i class="fas fa-download"></i> Direct Download (Fastest)';
-                    s1.setAttribute('download', data.filename);
+                    s1.setAttribute('target', '_blank');
                     s1.style.display = 'flex';
                     
                     // Fallbacks for others
                     if (q && q['1080p']) {
-                        s2.href = q['1080p'];
+                        s2.href = q['1080p']; // Already proxied in backend get_preview/handle_download
                         s2.innerHTML = '<i class="fas fa-video"></i> HD Quality';
-                        s2.setAttribute('download', 'video_hd.mp4');
+                        s2.setAttribute('target', '_blank');
                         s2.style.display = 'flex';
                     } else {
                         s2.style.display = 'none';
@@ -1554,24 +1555,24 @@
                     if (q['1080p']) {
                         s1.href = q['1080p'];
                         s1.innerHTML = '<i class="fas fa-download"></i> Download HD';
-                        s1.setAttribute('download', 'video_hd.mp4');
+                        s1.setAttribute('target', '_blank');
                         s1.style.display = 'flex';
                     }
                     if (q['720p']) {
                         s2.href = q['720p'];
                         s2.innerHTML = '<i class="fas fa-download"></i> Download SD';
-                        s2.setAttribute('download', 'video_sd.mp4');
+                        s2.setAttribute('target', '_blank');
                         s2.style.display = 'flex';
                     }
                 }
 
                 if (q && q['thumb']) {
                     t.href = q['thumb'];
-                    t.setAttribute('download', 'thumbnail.jpg');
+                    t.setAttribute('target', '_blank');
                     t.style.display = 'flex';
                 } else if (data.thumbnail) {
                     t.href = data.thumbnail;
-                    t.setAttribute('download', 'thumbnail.jpg');
+                    t.setAttribute('target', '_blank');
                     t.style.display = 'flex';
                 }
                 

@@ -656,7 +656,10 @@ def clear_cache():
 
 @app.route('/files/<path:filename>')
 def download_file(filename):
-    return send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
+    response = send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+    return response
 
 if __name__ == '__main__':
     # Local fallback for GH_REPO
