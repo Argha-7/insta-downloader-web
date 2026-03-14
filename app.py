@@ -31,6 +31,9 @@ def verify_request():
     """Verify that the request comes from our site and has the secret or a valid Firebase token."""
     secret = request.headers.get('X-App-Secret')
     auth_header = request.headers.get('Authorization')
+    referer = request.headers.get('Referer', 'No Referer')
+    
+    print(f"DEBUG: verify_request - Secret: {secret}, Referer: {referer}")
     
     # 1. Check for legacy/internal secret
     if secret == APP_SECRET:
