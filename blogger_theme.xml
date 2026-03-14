@@ -1307,8 +1307,13 @@
                         const prevData = await prevRes.json();
                         if (prevData && prevData.success) {
                             currentMetadata = prevData;
-                            document.getElementById('progThumb').src = prevData.thumbnail;
                             document.getElementById('progTitle').innerText = prevData.title;
+                            
+                            if (prevData.video_url) {
+                                showVideoPreview('progThumb', prevData.video_url);
+                            } else {
+                                document.getElementById('progThumb').src = prevData.thumbnail;
+                            }
                         }
                     }
                 } catch (e) {
@@ -1348,20 +1353,33 @@
                 }
             }
 
+            function showVideoPreview(elementId, videoUrl) {
+                const oldEl = document.getElementById(elementId);
+                if (!oldEl) return;
+                
+                const vid = document.createElement('video');
+                vid.id = elementId;
+                vid.src = videoUrl;
+                vid.muted = true;
+                vid.loop = true;
+                vid.autoplay = true; 
+                vid.playsInline = true;
+                vid.style.width = '100%';
+                vid.style.height = '100%';
+                vid.style.objectFit = 'cover';
+                vid.style.borderRadius = '15px';
+                
+                // Add class for styling consistency
+                if (elementId === 'progThumb') vid.className = 'prog-thumb';
+                if (elementId === 'resThumb') vid.className = 'res-thumb';
+                
+                // Use handlePreviewError style replacement
+                oldEl.replaceWith(vid);
+            }
+
             function handlePreviewError(img) {
                 if (currentMetadata && currentMetadata.video_url) {
-                    const vid = document.createElement('video');
-                    vid.src = currentMetadata.video_url;
-                    vid.muted = true;
-                    vid.loop = true;
-                    vid.autoplay = true; 
-                    vid.playsInline = true;
-                    vid.style.width = '100%';
-                    vid.style.height = '100%';
-                    vid.style.objectFit = 'cover';
-                    vid.style.borderRadius = '15px';
-                    
-                    img.replaceWith(vid);
+                    showVideoPreview(img.id, currentMetadata.video_url);
                 } else {
                     img.src = "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png";
                 }
