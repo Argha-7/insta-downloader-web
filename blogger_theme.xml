@@ -969,22 +969,25 @@
             <h2 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 20px;">Discover More Tools</h2>
             <p style="color: #64748b; margin-bottom: 50px;">Love InstaStream? Try our other specialized downloaders!</p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px;">
-                <a href="#" style="text-decoration: none; color: inherit;">
-                    <div class="f-card" style="margin:0; height: 100%;">
+                <a href="#urlInput" style="text-decoration: none; color: inherit;">
+                    <div class="f-card" style="margin:0; height: 100%; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:10px; right:-30px; background:#6366f1; color:white; font-size:0.6rem; padding:2px 30px; transform:rotate(45deg);">PRO</div>
                         <i class="fas fa-id-badge" style="color: #e1306c;"></i>
                         <h3>Profile Downloader</h3>
                         <p>Save high-resolution profile pictures from any public account instantly.</p>
                     </div>
                 </a>
-                <a href="#" style="text-decoration: none; color: inherit;">
-                    <div class="f-card" style="margin:0; height: 100%;">
+                <a href="#urlInput" style="text-decoration: none; color: inherit;">
+                    <div class="f-card" style="margin:0; height: 100%; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:10px; right:-30px; background:#f09433; color:white; font-size:0.6rem; padding:2px 30px; transform:rotate(45deg);">LITE</div>
                         <i class="fas fa-history" style="color: #f09433;"></i>
                         <h3>Story Saver</h3>
                         <p>Download active stories and highlights with one click before they disappear.</p>
                     </div>
                 </a>
-                <a href="#" style="text-decoration: none; color: inherit;">
-                    <div class="f-card" style="margin:0; height: 100%;">
+                <a href="#urlInput" style="text-decoration: none; color: inherit;">
+                    <div class="f-card" style="margin:0; height: 100%; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:10px; right:-30px; background:#3b82f6; color:white; font-size:0.6rem; padding:2px 30px; transform:rotate(45deg);">NEW</div>
                         <i class="fas fa-music" style="color: #3b82f6;"></i>
                         <h3>Convert to MP3</h3>
                         <p>Extract high-quality audio from any Instagram video or Reel as an MP3.</p>

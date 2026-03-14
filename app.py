@@ -15,7 +15,7 @@ from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 # Simplified CORS for debugging - allows all origins and headers temporarily
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "Authorization", "X-App-Secret"]}})
 
 # SECURITY CONFIG
 ALLOWED_ORIGINS = [
@@ -172,6 +172,10 @@ def cleanup_files():
         time.sleep(300)
 
 threading.Thread(target=cleanup_files, daemon=True).start()
+
+@app.route('/api/stats')
+def get_stats():
+    return jsonify(load_stats())
 
 @app.route('/manifest.json')
 def serve_manifest():
