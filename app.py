@@ -83,7 +83,7 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 # Usage tracking (Credits & Cash System)
 # Format: {ip: {'credits': 50, 'balance': 0.0, 'referral_id': '...', 'last_activity': timestamp}}
 user_credits = {}
-DEFAULT_CREDITS = 200
+DEFAULT_CREDITS = 1000
 DOWNLOAD_COST = 10
 SHARE_REWARD = 20
 DOWNLOAD_CASH_REWARD = 0.50 # ₹0.50 per download
