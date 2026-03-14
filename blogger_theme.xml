@@ -1404,9 +1404,9 @@
                 document.getElementById('resThumb').src = data.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png";
                 document.getElementById('downloadLink').href = `${API_BASE}/files/${data.filename}`;
 
-                // Populate Quality Buttons
-                if (currentMetadata && currentMetadata.qualities) {
-                    const q = currentMetadata.qualities;
+                // Populate Quality Buttons (Merge from metadata and actual data)
+                const q = data.qualities || (currentMetadata ? currentMetadata.qualities : null);
+                if (q) {
                     const hdBtn = document.getElementById('qualityHD');
                     const sdBtn = document.getElementById('qualitySD');
                     const thumbBtn = document.getElementById('qualityThumb');

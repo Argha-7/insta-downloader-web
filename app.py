@@ -269,10 +269,23 @@ def download_video(url):
             filename = ydl.prepare_filename(info)
             if os.path.exists(filename):
                 increment_downloads()
+                
+                # Quality extraction
+                hd_url = ""
+                sd_url = ""
+                mp4_formats = [f for f in info.get('formats', []) if f.get('ext') == 'mp4' and f.get('vcodec') != 'none']
+                if mp4_formats:
+                    mp4_formats.sort(key=lambda x: x.get('height', 0), reverse=True)
+                    hd_url = mp4_formats[0].get('url', '')
+                    sd_formats = [f for f in mp4_formats if f.get('height', 0) <= 720]
+                    sd_url = sd_formats[0].get('url', '') if sd_formats else hd_url
+
                 return "SUCCESS", {
                     'filename': os.path.basename(filename),
                     'title': info.get('title', 'Instagram Video'),
-                    'thumbnail': info.get('thumbnail', '')
+                    'thumbnail': info.get('thumbnail', ''),
+                    'hd_url': hd_url,
+                    'sd_url': sd_url
                 }
     except Exception as e:
         err_str = str(e)
@@ -322,6 +335,17 @@ def handle_download():
         encoded_thumb = urllib.parse.quote(raw_thumb) if raw_thumb else ""
         proxy_thumb = f"{request.host_url}proxy-img?url={encoded_thumb}" if raw_thumb else ""
         
+        # Extract direct links for qualities
+        def get_dl_url(u, ext):
+            if not u: return ""
+            encoded = urllib.parse.quote(u)
+            return f"{request.host_url}dl-proxy?url={encoded}&name=instastream_{ext}"
+
+        # Note: 'result' here comes from download_video which currently only returns filename, title, thumb
+        # I should probably update download_video to return all info or just use placeholder qualities if not found
+        # Actually, let's keep it simple: if hd_url isn't in result, we use the preview's qualities if available on frontend
+        # But for consistency, let's try to get them here too if possible
+        
         return jsonify({
             'success': True, 
             'status': 'ready', 
@@ -329,7 +353,12 @@ def handle_download():
             'title': result['title'],
             'thumbnail': proxy_thumb,
             'credits': user_data['credits'],
-            'balance': round(user_data['balance'], 2)
+            'balance': round(user_data['balance'], 2),
+            'qualities': {
+                '1080p': get_dl_url(result.get('hd_url'), "1080p.mp4"),
+                '720p': get_dl_url(result.get('sd_url'), "720p.mp4"),
+                'thumb': get_dl_url(raw_thumb, "thumb.jpg")
+            }
         })
     elif status == "PENDING_GITHUB":
         user_data['credits'] -= DOWNLOAD_COST
@@ -412,6 +441,33 @@ def proxy_image():
     except Exception as e:
         return str(e), 500
 
+from flask import Response, stream_with_context
+
+@app.route('/dl-proxy')
+def dl_proxy():
+    """Proxies a direct URL and forces download with attachment headers (Streaming)."""
+    url = request.args.get('url')
+    name = request.args.get('name', 'video.mp4')
+    if not url: return "No URL", 400
+    try:
+        resp = requests.get(url, stream=True, timeout=15, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        })
+        
+        def generate():
+            for chunk in resp.iter_content(chunk_size=8192):
+                yield chunk
+
+        return Response(stream_with_context(generate()), 
+                        status=resp.status_code,
+                        content_type=resp.headers.get('Content-Type', 'application/octet-stream'),
+                        headers={
+                            'Content-Disposition': f'attachment; filename="{name}"',
+                            'Cache-Control': 'public, max-age=86400'
+                        })
+    except Exception as e:
+        return str(e), 500
+
 @app.route('/preview', methods=['POST'])
 def get_preview():
     """Fetches metadata (title/thumbnail) without downloading."""
@@ -460,19 +516,21 @@ def get_preview():
             raw_thumb = info.get('thumbnail', '')
             video_url = hd_url or info.get('url', '') # Use HD as primary video preview
             
-            # URL encode the raw thumb to prevent & characters from breaking the query param
-            encoded_thumb = urllib.parse.quote(raw_thumb) if raw_thumb else ""
-            proxy_thumb = f"{request.host_url}proxy-img?url={encoded_thumb}" if raw_thumb else ""
-            
+            # Use our proxy for qualities to ensure "Force Download"
+            def get_dl_url(u, ext):
+                if not u: return ""
+                encoded = urllib.parse.quote(u)
+                return f"{request.host_url}dl-proxy?url={encoded}&name=instastream_{ext}"
+
             return jsonify({
                 'success': True,
                 'title': info.get('title', 'Instagram Video'),
                 'thumbnail': proxy_thumb,
                 'video_url': video_url,
                 'qualities': {
-                    '1080p': hd_url,
-                    '720p': sd_url,
-                    'thumb': raw_thumb
+                    '1080p': get_dl_url(hd_url, "1080p.mp4"),
+                    '720p': get_dl_url(sd_url, "720p.mp4"),
+                    'thumb': get_dl_url(raw_thumb, "thumb.jpg")
                 }
             })
     except Exception as e:
