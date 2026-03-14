@@ -828,6 +828,7 @@
                     <input id="upiInput" placeholder="example@ybl" style="width:100%; padding: 12px; border-radius:10px; border:1px solid #e2e8f0; margin-top:5px;" type="text"/>
                 </div>
                 <button class="btn-withdraw" onclick="withdraw()">Withdraw to UPI</button>
+                <button class="btn-withdraw" onclick="resetAppData()" style="background: #ef4444; margin-top: 10px;">Reset All Data</button>
                 <p style="font-size:0.7rem; color:#94a3b8; margin-top:15px;">Min. withdrawal: ₹50.00 | Processed in 24h</p>
             </div>
         </div>
@@ -1618,14 +1619,20 @@
                     document.getElementById('dashBalance').innerText = balance.toFixed(2);
                     document.getElementById('dashDownloads').innerText = Math.floor(credits/10);
                     document.getElementById('refUrl').value = `https://argha-7.blogspot.com?ref=${referralID}`;
-                    
                     if (credits < 10) {
-                        document.getElementById('walletDisplay').style.background = 'rgba(239, 68, 68, 0.1)';
+                        document.getElementById('limitText').style.color = "#ef4444";
                     } else {
-                        document.getElementById('walletDisplay').style.background = 'rgba(59, 130, 246, 0.1)';
+                        document.getElementById('limitText').style.color = "inherit";
                     }
-                } catch (e) {
-                    console.error("Credit fetch failed");
+                } catch (e) { console.log("Credit sync failed"); }
+            }
+
+            function resetAppData() {
+                if (confirm("Are you sure? This will clear all your local data, including Device ID and custom settings. Your credits will reset to default.")) {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    alert("Data cleared! Refreshing page...");
+                    window.location.reload();
                 }
             }
 

@@ -180,7 +180,14 @@ def get_user_data(ip, gift=None, device_id=None):
         user_credits[user_key]['credits'] = target
         print(f"DEBUG: REFRESHED {user_key} credits: {old_credits} -> {target}")
 
-    user_credits[user_key]['last_activity'] = time.time()
+    # Periodic Cleanup: Remove entries older than 24h (86400s) to prevent memory bloat
+    if len(user_credits) > 1000: # Only clear if we have many users
+        now = time.time()
+        to_delete = [k for k, v in user_credits.items() if now - v.get('last_activity', 0) > 86400]
+        for k in to_delete:
+            del user_credits[k]
+            print(f"DEBUG: AUTO-CLEANUP removed {k}")
+
     return user_credits[user_key]
 job_status = {}
 
@@ -613,6 +620,18 @@ def github_callback():
     job_status[job_id] = {'status': 'ready', 'filename': filename}
     print(f"Job {job_id} READY via GitHub Callback.")
     return "OK", 200
+
+@app.route('/api/admin/clear-cache', methods=['POST'])
+def clear_cache():
+    """Securely clear all in-memory data."""
+    secret = request.headers.get('X-App-Secret')
+    if secret != os.environ.get('APP_SECRET', 'insta_pro_ai_secure_99'):
+        return jsonify({'success': False, 'message': 'Forbidden'}), 403
+    
+    user_credits.clear()
+    job_status.clear()
+    print("ADMIN: All in-memory data cleared successfully.")
+    return jsonify({'success': True, 'message': 'All data cleared successfully.'})
 
 @app.route('/files/<path:filename>')
 def download_file(filename):
