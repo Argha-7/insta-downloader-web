@@ -128,6 +128,12 @@ def increment_downloads():
     save_stats(current_inc + 1)
     return load_stats()["total_downloads"]
 
+def get_client_ip():
+    """Robust IP detection for proxy environments like HF."""
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return request.remote_addr or "127.0.0.1"
+
 def generate_ref_id():
     return str(uuid.uuid4())[:8]
 
@@ -137,11 +143,17 @@ def get_user_data(ip):
     user_key = ip
     if hasattr(request, 'fb_user'):
         user_key = request.fb_user['uid']
-        print(f"DEBUG: Authenticated user accessing: {user_key}")
+    
+    # Extract gift parameter from any possible source
+    gift = None
+    if request.is_json:
+        try:
+            gift = request.json.get('gift')
+        except: pass
+    if not gift:
+        gift = request.args.get('gift') or request.form.get('gift')
 
     if user_key not in user_credits:
-        # Check for gift parameter in request
-        gift = request.json.get('gift') if request.is_json else request.args.get('gift')
         initial_credits = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
         
         # Check if the request contains a referral ID
@@ -155,6 +167,8 @@ def get_user_data(ip):
             'is_auth': True if hasattr(request, 'fb_user') else False
         }
         
+        print(f"DEBUG: NEW USER {user_key} - Credits: {initial_credits} (Gift: {gift})")
+
         # Reward the referrer if valid
         if ref_id:
             for other_key, data in user_credits.items():
@@ -164,13 +178,16 @@ def get_user_data(ip):
                     break
                     
     else:
-        # Always ensure user has at least the default credits for the session
-        # This fixes issues for users stuck on 0 from previous buggy sessions
-        if user_credits[user_key]['credits'] < 50:
-            gift = request.json.get('gift') if request.is_json else request.args.get('gift')
-            user_credits[user_key]['credits'] = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
-            print(f"AUTO REFRESH: User {user_key} credits restored.")
+        # Mandatory top-up if user is extremely low (< 50) 
+        # OR if they just provided the gift link
+        old_credits = user_credits[user_key]['credits']
+        target = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
+        
+        if old_credits < 50 or gift == 'bonus100':
+            user_credits[user_key]['credits'] = target
+            print(f"DEBUG: REFRESH USER {user_key} - Credits: {old_credits} -> {target} (Gift: {gift})")
 
+    user_credits[user_key]['last_activity'] = time.time()
     return user_credits[user_key]
 job_status = {}
 
@@ -330,11 +347,11 @@ def index():
     return render_template('index.html')
 
 @app.route('/download', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("10 per minute")
 def handle_download():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
-    ip = get_remote_address()
+    ip = get_client_ip()
     user_data = get_user_data(ip)
     
     if user_data['credits'] < DOWNLOAD_COST:
@@ -403,7 +420,7 @@ def get_stats():
 def check_limit():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
-    ip = get_remote_address()
+    ip = get_client_ip()
     user_data = get_user_data(ip)
     return jsonify({
         'credits': user_data['credits'],

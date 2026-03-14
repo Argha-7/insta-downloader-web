@@ -1329,6 +1329,11 @@
             updateStats();
             setInterval(updateStats, 60000);
 
+            // Capture URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const refParam = urlParams.get('ref') || "";
+            const giftParam = urlParams.get('gift') || "";
+
             async function startDownload() {
                 const url = document.getElementById('urlInput').value.trim();
                 const btn = document.getElementById('downloadBtn');
@@ -1361,7 +1366,7 @@
                     const prevRes = await fetch(`${API_BASE}/preview`, {
                         method: 'POST',
                         headers: await getSecureHeaders(),
-                        body: JSON.stringify({ url })
+                        body: JSON.stringify({ url, gift: giftParam })
                     });
                     if (prevRes.ok) {
                         const prevData = await prevRes.json();
@@ -1385,7 +1390,7 @@
                     const dlRes = await fetch(`${API_BASE}/download`, {
                         method: 'POST',
                         headers: await getSecureHeaders(),
-                        body: JSON.stringify({ url })
+                        body: JSON.stringify({ url, gift: giftParam })
                     });
                     const data = await dlRes.json();
 
@@ -1578,16 +1583,13 @@
             // Limit & Points & referral Logic
             let referralID = "";
             
-            // Capture 'ref' from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const refParam = urlParams.get('ref') || "";
 
             async function updateCredits() {
                 try {
                     const res = await fetch(`${API_BASE}/check-limit`, {
                         method: 'POST',
                         headers: await getSecureHeaders(),
-                        body: JSON.stringify({ ref: refParam })
+                        body: JSON.stringify({ ref: refParam, gift: giftParam })
                     });
                     const data = await res.json();
                     const credits = data.credits || 0;
