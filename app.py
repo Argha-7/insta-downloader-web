@@ -83,7 +83,7 @@ if not os.path.exists(DOWNLOAD_FOLDER):
 # Usage tracking (Credits & Cash System)
 # Format: {ip: {'credits': 50, 'balance': 0.0, 'referral_id': '...', 'last_activity': timestamp}}
 user_credits = {}
-DEFAULT_CREDITS = 1000
+DEFAULT_CREDITS = 500
 DOWNLOAD_COST = 10
 SHARE_REWARD = 20
 DOWNLOAD_CASH_REWARD = 0.50 # ₹0.50 per download
@@ -140,11 +140,15 @@ def get_user_data(ip):
         print(f"DEBUG: Authenticated user accessing: {user_key}")
 
     if user_key not in user_credits:
+        # Check for gift parameter in request
+        gift = request.json.get('gift') if request.is_json else request.args.get('gift')
+        initial_credits = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
+        
         # Check if the request contains a referral ID
         ref_id = request.json.get('ref') if request.is_json else request.args.get('ref')
         
         user_credits[user_key] = {
-            'credits': DEFAULT_CREDITS, 
+            'credits': initial_credits, 
             'balance': 0.0,
             'referral_id': generate_ref_id(),
             'last_activity': time.time(),
@@ -160,10 +164,12 @@ def get_user_data(ip):
                     break
                     
     else:
-        # Auto top-up for existing users if they are extremely low
-        if user_credits[user_key]['credits'] < 100:
-            user_credits[user_key]['credits'] = DEFAULT_CREDITS
-            print(f"AUTO TOP-UP: User {user_key} credits restored to {DEFAULT_CREDITS}")
+        # Always ensure user has at least the default credits for the session
+        # This fixes issues for users stuck on 0 from previous buggy sessions
+        if user_credits[user_key]['credits'] < 50:
+            gift = request.json.get('gift') if request.is_json else request.args.get('gift')
+            user_credits[user_key]['credits'] = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
+            print(f"AUTO REFRESH: User {user_key} credits restored.")
 
     return user_credits[user_key]
 job_status = {}
