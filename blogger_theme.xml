@@ -30,8 +30,9 @@
         <link href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css' rel='stylesheet'/>
         <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
         
-        <!-- Adsterra Monetization Script -->
-        <script src="https://pl28916218.effectivegatecpm.com/40/88/33/408833b1ca42ebb371b46e0cb5d63676.js"></script>
+        <!-- Adsterra Monetization Scripts -->
+        <script src="https://pl28916218.effectivegatecpm.com/40/88/33/408833b1ca42ebb371b46e0cb5d63676.js" type="text/javascript"></script>
+        <script type='text/javascript' src='//pl28916325.highperformanceformat.com/f0/ee/66/f0ee6665790c88931109a1a1a5b10629.js'></script>
 
         <b:skin><![CDATA[ /* Blogger Required Skin */ ]]></b:skin>
 
