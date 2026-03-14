@@ -852,6 +852,16 @@
         <main class='hero animate'>
             <div class='ad-slot'>
                 <!-- Header Ad Placement -->
+                <script type="text/javascript">
+                  atOptions = {
+                    'key' : '53a00315783b863976c54724f0f6d67c',
+                    'format' : 'iframe',
+                    'height' : 250,
+                    'width' : 300,
+                    'params' : {}
+                  };
+                </script>
+                <script src="https://www.highperformanceformat.com/53a00315783b863976c54724f0f6d67c/invoke.js" type="text/javascript"></script>
             </div>
 
             <h1 style='font-size: 3.5rem; font-weight: 800; margin-bottom: 20px; line-height: 1.1;'>
@@ -877,7 +887,16 @@
 
         <!-- Adsterra Section -->
         <div class='ad-slot' style='margin-top:40px;'>
-            <span>ADSTERRA NATIVE AD AREA</span>
+            <script type="text/javascript">
+              atOptions = {
+                'key' : '53a00315783b863976c54724f0f6d67c',
+                'format' : 'iframe',
+                'height' : 250,
+                'width' : 300,
+                'params' : {}
+              };
+            </script>
+            <script src="https://www.highperformanceformat.com/53a00315783b863976c54724f0f6d67c/invoke.js" type="text/javascript"></script>
         </div>
 
         <div class='progress-card' id='progressUI'>
@@ -1109,7 +1128,16 @@
 
     <!-- Bottom Ad Slot -->
     <div class='ad-slot' style='margin: 50px auto;'>
-        <span>ADSTERRA FOOTER AD</span>
+        <script type="text/javascript">
+          atOptions = {
+            'key' : '53a00315783b863976c54724f0f6d67c',
+            'format' : 'iframe',
+            'height' : 250,
+            'width' : 300,
+            'params' : {}
+          };
+        </script>
+        <script src="https://www.highperformanceformat.com/53a00315783b863976c54724f0f6d67c/invoke.js" type="text/javascript"></script>
     </div>
 
     <footer>
