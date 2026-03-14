@@ -505,8 +505,10 @@ def dl_proxy():
 @app.route('/preview', methods=['POST'])
 def get_preview():
     """Fetches metadata (title/thumbnail) without downloading."""
-    if not verify_request():
-        return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
+    gift = request.json.get('gift') if request.is_json else request.args.get('gift') or request.form.get('gift')
+    ip = get_client_ip()
+    user_data = get_user_data(ip, gift=gift)
+    
     url = request.json.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
     
