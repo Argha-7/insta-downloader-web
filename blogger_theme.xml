@@ -103,18 +103,21 @@
             /* Ad Placements */
             .ad-slot {
                 width: 100%;
-                max-width: 728px;
-                min-height: 90px;
-                margin: 20px auto;
-                background: rgba(0,0,0,0.03);
-                border: 1px dashed #cbd5e1;
-                border-radius: 12px;
+                max-width: 100%;
+                min-height: 50px;
+                margin: 25px auto;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: #94a3b8;
-                font-size: 0.8rem;
                 overflow: hidden;
+                position: relative;
+            }
+            .ad-slot iframe { 
+                max-width: 100% !important;
+                height: auto !important;
+            }
+            @media (max-width: 480px) {
+                .ad-slot { margin: 15px auto; min-height: 250px; }
             }
 
             /* Navbar */
