@@ -518,20 +518,23 @@ def dl_proxy():
     name = request.args.get('name', 'video.mp4')
     if not url: return "No URL", 400
     try:
-        resp = requests.get(url, stream=True, timeout=15, headers={
+        resp = requests.get(url, stream=True, timeout=20, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            'Accept': '*/*',
         })
         
         def generate():
-            for chunk in resp.iter_content(chunk_size=8192):
-                yield chunk
+            for chunk in resp.iter_content(chunk_size=1024*64): # Use larger chunks for faster streaming
+                if chunk:
+                    yield chunk
 
         return Response(stream_with_context(generate()), 
                         status=resp.status_code,
-                        content_type=resp.headers.get('Content-Type', 'application/octet-stream'),
+                        content_type=resp.headers.get('Content-Type', 'video/mp4'),
                         headers={
                             'Content-Disposition': f'attachment; filename="{name}"',
-                            'Cache-Control': 'public, max-age=86400'
+                            'X-Content-Type-Options': 'nosniff',
+                            'Cache-Control': 'no-cache'
                         })
     except Exception as e:
         return str(e), 500
