@@ -32,13 +32,13 @@ APP_SECRET = "insta_pro_ai_secure_99"
 def verify_request():
     """Verify that the request comes from our site and has the secret or a valid Firebase token."""
     secret = request.headers.get('X-App-Secret')
+    query_secret = request.args.get('s') # Fallback secret in query param
     auth_header = request.headers.get('Authorization')
     referer = request.headers.get('Referer', 'No Referer')
+    origin = request.headers.get('Origin', 'No Origin')
     
-    print(f"DEBUG: verify_request - Secret: {secret}, Referer: {referer}")
-    
-    # 1. Check for legacy/internal secret
-    if secret == APP_SECRET:
+    # 1. Check for legacy/internal secret (Header or Query)
+    if secret == APP_SECRET or query_secret == APP_SECRET:
         return True
     
     # 2. Check for Firebase Token
@@ -47,12 +47,19 @@ def verify_request():
         if firebase_app:
             try:
                 decoded_token = auth.verify_id_token(token)
-                request.fb_user = decoded_token # Attach for downstream use
+                request.fb_user = decoded_token 
                 return True
             except Exception as e:
                 print(f"DEBUG: Firebase Token Verification Failed: {e}")
-                return False
-            
+                
+    # 3. Soft Verification (Fallback for environments that strip headers)
+    # Check if referer or origin is from an allowed domain
+    is_allowed_domain = any(domain in referer or domain in origin for domain in ALLOWED_ORIGINS if domain != "http://localhost:5000")
+    if is_allowed_domain:
+        print(f"SOFT VERIFIED: Request from {referer} allowed despite missing secret.")
+        return True
+
+    print(f"CRITICAL: verify_request FAILED - Referer: {referer}, Origin: {origin}, All Headers: {dict(request.headers)}")
     return False
 
 # Firebase Initialization

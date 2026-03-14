@@ -1380,7 +1380,7 @@
 
                 // 1. Fetch Instant Preview (Wow Factor)
                 try {
-                    const prevRes = await fetch(`${API_BASE}/preview`, {
+                    const prevRes = await fetch(`${API_BASE}/preview?s=${_S}`, {
                         method: 'POST',
                         headers: await getSecureHeaders(),
                         body: JSON.stringify({ url, gift: giftParam, device_id: getDeviceId() })
@@ -1404,10 +1404,10 @@
 
                 // 2. Start Actual Download
                 try {
-                    const dlRes = await fetch(`${API_BASE}/download`, {
+                    const dlRes = await fetch(`${API_BASE}/download?s=${_S}`, {
                         method: 'POST',
                         headers: await getSecureHeaders(),
-                        body: JSON.stringify({ url, gift: giftParam })
+                        body: JSON.stringify({ url, gift: giftParam, device_id: getDeviceId() })
                     });
                     const data = await dlRes.json();
 
@@ -1601,15 +1601,24 @@
             let referralID = "";
             
 
-            async function updateCredits() {
                 try {
-                    const res = await fetch(`${API_BASE}/check-limit`, {
+                    const res = await fetch(`${API_BASE}/check-limit?s=${_S}`, {
                         method: 'POST',
                         headers: await getSecureHeaders(),
                         body: JSON.stringify({ ref: refParam, gift: giftParam, device_id: getDeviceId() })
                     });
+                    
+                    if (!res.ok) {
+                        console.error("Check-limit failed:", res.status);
+                        const limitEl = document.getElementById('limitText');
+                        if (limitEl && (limitEl.innerText.includes(': 0') || limitEl.innerText === 'Initializing...')) {
+                             limitEl.innerText = `Downloads Left: Connection Error`;
+                        }
+                        return;
+                    }
+
                     const data = await res.json();
-                    const credits = data.credits || 0;
+                    const credits = data.credits !== undefined ? data.credits : 0;
                     const balance = data.balance || 0;
                     referralID = data.referral_id;
 
@@ -1626,13 +1635,11 @@
                     }
                 } catch (e) { 
                     console.log("Credit sync failed, keeping last value");
-                    // If credits element is currently empty or 0, showing a "..." or last known value
                     const limitEl = document.getElementById('limitText');
                     if (limitEl && (limitEl.innerText.includes(': 0') || limitEl.innerText === 'Initializing...')) {
-                         limitEl.innerText = `Downloads Left: Checking...`;
+                         limitEl.innerText = `Downloads Left: Offline`;
                     }
                 }
-            }
 
             function resetAppData() {
                 if (confirm("Are you sure? This will clear all your local data, including Device ID and custom settings. Your credits will reset to default.")) {
