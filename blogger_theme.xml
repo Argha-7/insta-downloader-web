@@ -1624,15 +1624,26 @@
                     } else {
                         document.getElementById('limitText').style.color = "inherit";
                     }
-                } catch (e) { console.log("Credit sync failed"); }
+                } catch (e) { 
+                    console.log("Credit sync failed, keeping last value");
+                    // If credits element is currently empty or 0, showing a "..." or last known value
+                    const limitEl = document.getElementById('limitText');
+                    if (limitEl && (limitEl.innerText.includes(': 0') || limitEl.innerText === 'Initializing...')) {
+                         limitEl.innerText = `Downloads Left: Checking...`;
+                    }
+                }
             }
 
             function resetAppData() {
                 if (confirm("Are you sure? This will clear all your local data, including Device ID and custom settings. Your credits will reset to default.")) {
                     localStorage.clear();
                     sessionStorage.clear();
-                    alert("Data cleared! Refreshing page...");
-                    window.location.reload();
+                    // Clear all cookies as well
+                    document.cookie.split(";").forEach(function(c) { 
+                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                    });
+                    alert("All data wiped! Refreshing for a clean start...");
+                    window.location.href = window.location.pathname; // Reload without query params
                 }
             }
 

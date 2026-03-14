@@ -14,6 +14,8 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
+# Global lock for user_credits to prevent race conditions
+data_lock = threading.Lock()
 # Simplified CORS for debugging - allows all origins and headers temporarily
 CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "Authorization", "X-App-Secret"]}})
 
@@ -136,7 +138,6 @@ def get_client_ip():
 
 def generate_ref_id():
     return str(uuid.uuid4())[:8]
-
 def get_user_data(ip, gift=None, device_id=None):
     """Helper to get or initialize user data with multi-layer ID tracking."""
     # Priority: Firebase UID > Device ID > IP Address
@@ -146,49 +147,59 @@ def get_user_data(ip, gift=None, device_id=None):
     elif device_id:
         user_key = f"did_{device_id}"
     
-    # Aggressive Logging
-    print(f"DEBUG: get_user_data(key={user_key}, ip={ip}, device_id={device_id}, gift={gift})")
+    with data_lock:
+        # Aggressive Logging
+        print(f"CRITICAL DEBUG: get_user_data(key={user_key}, ip={ip}, device_id={device_id}, gift={gift})")
 
-    if user_key not in user_credits:
-        initial_credits = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
+        if user_key not in user_credits:
+            initial_credits = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
+            
+            # Check if the request contains a referral ID
+            ref_id = None
+            if request.is_json:
+                try: ref_id = request.json.get('ref')
+                except: pass
+            if not ref_id: ref_id = request.args.get('ref')
+            
+            user_credits[user_key] = {
+                'credits': initial_credits, 
+                'balance': 0.0,
+                'referral_id': generate_ref_id(),
+                'last_activity': time.time(),
+                'is_auth': True if hasattr(request, 'fb_user') else False
+            }
+            print(f"CRITICAL DEBUG: NEW USER {user_key} initialized with {initial_credits}")
+
+            # Reward the referrer if valid
+            if ref_id:
+                for other_key, data in user_credits.items():
+                    if data['referral_id'] == ref_id and other_key != user_key:
+                        data['balance'] += REFERRAL_CASH_REWARD
+                        print(f"REFERRAL REWARD: {other_key} earned ₹{REFERRAL_CASH_REWARD}")
+                        break
         
-        # Check if the request contains a referral ID
-        ref_id = request.json.get('ref') if request.is_json else request.args.get('ref')
+        # Aggressive Reset Logic: If credits are 0 or None, and it's not a known exhausted user
+        # We'll allow them some slack if they are new or just reset
+        target = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
+        current_credits = user_credits[user_key].get('credits', 0)
         
-        user_credits[user_key] = {
-            'credits': initial_credits, 
-            'balance': 0.0,
-            'referral_id': generate_ref_id(),
-            'last_activity': time.time(),
-            'is_auth': True if hasattr(request, 'fb_user') else False
-        }
-        print(f"DEBUG: NEW USER {user_key} initialized with {initial_credits}")
+        if current_credits < 10 or gift == 'bonus100':
+            # Only reset if they aren't actually using it (to prevent infinite downloads)
+            # But for the 0 problem, we force it once
+            user_credits[user_key]['credits'] = target
+            print(f"CRITICAL DEBUG: REFRESHED {user_key} credits: {current_credits} -> {target}")
 
-        # Reward the referrer if valid
-        if ref_id:
-            for other_key, data in user_credits.items():
-                if data['referral_id'] == ref_id and other_key != user_key:
-                    data['balance'] += REFERRAL_CASH_REWARD
-                    print(f"REFERRAL REWARD: {other_key} earned ₹{REFERRAL_CASH_REWARD}")
-                    break
-                    
-    # Aggressive Reset Logic: Always check if the user needs more credits
-    target = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
-    old_credits = user_credits[user_key]['credits']
-    
-    if old_credits < 50 or gift == 'bonus100':
-        user_credits[user_key]['credits'] = target
-        print(f"DEBUG: REFRESHED {user_key} credits: {old_credits} -> {target}")
+        user_credits[user_key]['last_activity'] = time.time()
+        
+        # Periodic Cleanup: Remove entries older than 24h
+        if len(user_credits) > 500:
+            now = time.time()
+            to_delete = [k for k, v in user_credits.items() if now - v.get('last_activity', 0) > 86400]
+            for k in to_delete:
+                del user_credits[k]
+                print(f"DEBUG: AUTO-CLEANUP removed {k}")
 
-    # Periodic Cleanup: Remove entries older than 24h (86400s) to prevent memory bloat
-    if len(user_credits) > 1000: # Only clear if we have many users
-        now = time.time()
-        to_delete = [k for k, v in user_credits.items() if now - v.get('last_activity', 0) > 86400]
-        for k in to_delete:
-            del user_credits[k]
-            print(f"DEBUG: AUTO-CLEANUP removed {k}")
-
-    return user_credits[user_key]
+        return user_credits[user_key]
 job_status = {}
 
 # Cleanup task to delete files older than 20 minutes
