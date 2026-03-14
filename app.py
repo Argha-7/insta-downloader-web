@@ -137,15 +137,17 @@ def get_client_ip():
 def generate_ref_id():
     return str(uuid.uuid4())[:8]
 
-def get_user_data(ip, gift=None):
-    """Helper to get or initialize user data with referral and auth tracking."""
-    # Priority: Firebase UID > IP Address
+def get_user_data(ip, gift=None, device_id=None):
+    """Helper to get or initialize user data with multi-layer ID tracking."""
+    # Priority: Firebase UID > Device ID > IP Address
     user_key = ip
     if hasattr(request, 'fb_user'):
         user_key = request.fb_user['uid']
+    elif device_id:
+        user_key = f"did_{device_id}"
     
     # Aggressive Logging
-    print(f"DEBUG: get_user_data(key={user_key}, ip={ip}, gift={gift})")
+    print(f"DEBUG: get_user_data(key={user_key}, ip={ip}, device_id={device_id}, gift={gift})")
 
     if user_key not in user_credits:
         initial_credits = 1000 if gift == 'bonus100' else DEFAULT_CREDITS
@@ -338,16 +340,17 @@ def index():
     return render_template('index.html')
 
 @app.route('/download', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("15 per minute")
 def handle_download():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
     
-    # Extract gift parameter early
-    gift = request.json.get('gift') if request.is_json else request.args.get('gift') or request.form.get('gift')
+    data = request.json or {}
+    gift = data.get('gift') or request.args.get('gift')
+    device_id = data.get('device_id')
     
     ip = get_client_ip()
-    user_data = get_user_data(ip, gift=gift)
+    user_data = get_user_data(ip, gift=gift, device_id=device_id)
     
     if user_data['credits'] < DOWNLOAD_COST:
         return jsonify({'success': False, 'message': f'Insufficient credits ({user_data["credits"]}). Share on WhatsApp to earn more!'}), 403
@@ -416,9 +419,12 @@ def check_limit():
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
     
-    gift = request.json.get('gift') if request.is_json else request.args.get('gift') or request.form.get('gift')
+    data = request.json or {}
+    gift = data.get('gift') or request.args.get('gift')
+    device_id = data.get('device_id')
+    
     ip = get_client_ip()
-    user_data = get_user_data(ip, gift=gift)
+    user_data = get_user_data(ip, gift=gift, device_id=device_id)
     return jsonify({
         'credits': user_data['credits'],
         'balance': round(user_data['balance'], 2),
@@ -448,8 +454,11 @@ def reward_share():
     """Reward user for sharing the site."""
     if not verify_request():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
+    
+    data = request.json or {}
+    device_id = data.get('device_id')
     ip = get_client_ip()
-    user_data = get_user_data(ip)
+    user_data = get_user_data(ip, device_id=device_id)
     user_data['credits'] += SHARE_REWARD
     return jsonify({
         'success': True,
@@ -505,11 +514,14 @@ def dl_proxy():
 @app.route('/preview', methods=['POST'])
 def get_preview():
     """Fetches metadata (title/thumbnail) without downloading."""
-    gift = request.json.get('gift') if request.is_json else request.args.get('gift') or request.form.get('gift')
-    ip = get_client_ip()
-    user_data = get_user_data(ip, gift=gift)
+    data = request.json or {}
+    gift = data.get('gift') or request.args.get('gift')
+    device_id = data.get('device_id')
     
-    url = request.json.get('url')
+    ip = get_client_ip()
+    user_data = get_user_data(ip, gift=gift, device_id=device_id)
+    
+    url = data.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
     
     if '?' in url: url = url.split('?')[0]

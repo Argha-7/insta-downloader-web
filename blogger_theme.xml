@@ -812,6 +812,10 @@
                 <h2 style="margin-top: 15px;">Your Earnings</h2>
                 <div class="dash-balance">₹                    <span id="dashBalance">0.00</span>
                 </div>
+                <div style="margin-bottom: 20px; font-weight: 700; color: var(--primary);">
+                    Available Downloads: <span id="dashDownloads">0</span> 
+                    <i class="fas fa-sync-alt" onclick="updateCredits()" style="margin-left:10px; cursor:pointer;" title="Refresh"></i>
+                </div>
                 <p style="color: #64748b; font-size: 0.9rem;">You earn ₹0.50 per download and ₹2.00 per referral!</p>
 
                 <div class="ref-box">
@@ -1331,6 +1335,16 @@
             updateStats();
             setInterval(updateStats, 60000);
 
+            // Device ID Logic
+            function getDeviceId() {
+                let id = localStorage.getItem('device_id');
+                if (!id) {
+                    id = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+                    localStorage.setItem('device_id', id);
+                }
+                return id;
+            }
+
             // Capture URL params
             const urlParams = new URLSearchParams(window.location.search);
             const refParam = urlParams.get('ref') || "";
@@ -1368,7 +1382,7 @@
                     const prevRes = await fetch(`${API_BASE}/preview`, {
                         method: 'POST',
                         headers: await getSecureHeaders(),
-                        body: JSON.stringify({ url, gift: giftParam })
+                        body: JSON.stringify({ url, gift: giftParam, device_id: getDeviceId() })
                     });
                     if (prevRes.ok) {
                         const prevData = await prevRes.json();
@@ -1591,17 +1605,18 @@
                     const res = await fetch(`${API_BASE}/check-limit`, {
                         method: 'POST',
                         headers: await getSecureHeaders(),
-                        body: JSON.stringify({ ref: refParam, gift: giftParam })
+                        body: JSON.stringify({ ref: refParam, gift: giftParam, device_id: getDeviceId() })
                     });
                     const data = await res.json();
                     const credits = data.credits || 0;
                     const balance = data.balance || 0;
                     referralID = data.referral_id;
 
-                    document.getElementById('limitText').innerText = `Balance: ${credits} Credits`;
-                    document.getElementById('navCredits').innerText = credits;
+                    document.getElementById('limitText').innerText = `Downloads Left: ${Math.floor(credits/10)}`;
+                    document.getElementById('navCredits').innerText = Math.floor(credits/10);
                     document.getElementById('navBalance').innerText = balance.toFixed(2);
                     document.getElementById('dashBalance').innerText = balance.toFixed(2);
+                    document.getElementById('dashDownloads').innerText = Math.floor(credits/10);
                     document.getElementById('refUrl').value = `https://argha-7.blogspot.com?ref=${referralID}`;
                     
                     if (credits < 10) {
