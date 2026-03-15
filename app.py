@@ -390,16 +390,8 @@ def handle_download():
         user_data['credits'] -= DOWNLOAD_COST
         user_data['balance'] += DOWNLOAD_CASH_REWARD
         raw_thumb = result.get('thumbnail', '')
-        # URL encode the raw thumb to prevent & characters from breaking the query param
-        encoded_thumb = urllib.parse.quote(raw_thumb) if raw_thumb else ""
-        proxy_thumb = f"{request.host_url}proxy-img?url={encoded_thumb}" if raw_thumb else ""
+        # Extract raw CDN links for qualities (Frontend will proxy them)
         
-        # Extract direct links for qualities
-        def get_dl_url(u, ext):
-            if not u: return ""
-            encoded = urllib.parse.quote(u)
-            return f"{request.host_url}dl-proxy?url={encoded}&name=instastream_{ext}"
-
         # Note: 'result' here comes from download_video which currently only returns filename, title, thumb
         # I should probably update download_video to return all info or just use placeholder qualities if not found
         # Actually, let's keep it simple: if hd_url isn't in result, we use the preview's qualities if available on frontend
@@ -590,27 +582,16 @@ def get_preview():
                     sd_url = hd_url # Fallback if only one exists
             
             raw_thumb = info.get('thumbnail', '')
-            # URL encode the raw thumb to prevent & characters from breaking the query param
-            encoded_thumb = urllib.parse.quote(raw_thumb) if raw_thumb else ""
-            proxy_thumb = f"{request.host_url}proxy-img?url={encoded_thumb}" if raw_thumb else ""
             
-            video_url = hd_url or info.get('url', '') # Use HD as primary video preview
-            
-            # Use our proxy for qualities to ensure "Force Download"
-            def get_dl_url(u, ext):
-                if not u: return ""
-                encoded = urllib.parse.quote(u)
-                return f"{request.host_url}dl-proxy?url={encoded}&name=instastream_{ext}"
-
             return jsonify({
                 'success': True,
                 'title': info.get('title', 'Instagram Video'),
-                'thumbnail': proxy_thumb,
+                'thumbnail': raw_thumb,
                 'video_url': video_url,
                 'qualities': {
-                    '1080p': get_dl_url(hd_url, "1080p.mp4"),
-                    '720p': get_dl_url(sd_url, "720p.mp4"),
-                    'thumb': get_dl_url(raw_thumb, "thumb.jpg")
+                    '1080p': hd_url,
+                    '720p': sd_url,
+                    'thumb': raw_thumb
                 }
             })
     except Exception as e:

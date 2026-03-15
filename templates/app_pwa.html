@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaStream App</title>
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --dark: #0f172a;
+            --light: #f8fafc;
+        }
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: var(--light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            max-width: 400px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .status {
+            font-weight: 600;
+            color: var(--dark);
+            margin: 20px 0;
+            font-size: 1.1rem;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #eee;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <i class="fab fa-instagram logo"></i>
+        <h1>InstaStream <span>AI</span></h1>
+        <div class="status" id="status">Ready to download</div>
+        
+        <div class="progress-bar" id="progBar">
+            <div class="progress-fill" id="progFill"></div>
+        </div>
+
+        <a id="dlBtn" class="btn" href="#" download>Save to Gallery</a>
+        
+        <p id="msg" style="color: #64748b; font-size: 0.9rem; margin-top: 20px;">
+            Open Instagram, share a Reel to this app!
+        </p>
+    </div>
+
+    <!-- Firebase SDK (Modular) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // --- Firebase Config (User needs to fill) ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // Initialize Firebase Safely
+        let auth = null;
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+            } catch (e) { console.error("Firebase init failed", e); }
+        }
+
+        const status = document.getElementById('status');
+        const progBar = document.getElementById('progBar');
+        const progFill = document.getElementById('progFill');
+        const dlBtn = document.getElementById('dlBtn');
+        const msg = document.getElementById('msg');
+
+        // Check for prefilled URL (from Share Target)
+        const prefill = "{{ prefill_url }}";
+        
+        // Wait for auth to be ready before starting prefilled download
+        if (auth) {
+            auth.onAuthStateChanged(user => {
+                if (prefill && prefill !== "None") {
+                    startDownload(prefill);
+                }
+            });
+        } else {
+            // Guest mode: start immediately if prefilled
+            if (prefill && prefill !== "None") {
+                startDownload(prefill);
+            }
+        }
+
+        async function getSecureHeaders() {
+            const headers = { 
+                'Content-Type': 'application/json',
+                'X-App-Secret': 'insta_pro_ai_secure_99' 
+            };
+            if (auth && auth.currentUser) {
+                try {
+                    const token = await auth.currentUser.getIdToken();
+                    headers['Authorization'] = `Bearer ${token}`;
+                } catch (e) { console.error("Token fetch failed", e); }
+            }
+            return headers;
+        }
+
+        async function startDownload(url) {
+            status.innerText = "Processing Share...";
+            progBar.style.display = 'block';
+            progFill.style.width = '30%';
+
+            try {
+                const res = await fetch('/download', {
+                    method: 'POST',
+                    headers: await getSecureHeaders(),
+                    body: JSON.stringify({ url: url })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success && data.status === 'ready') {
+                    showDownload(data.filename);
+                } else if (data.status === 'pending_github') {
+                    status.innerText = "Using Global Backup Cloud...";
+                    pollStatus(data.job_id);
+                } else {
+                    status.innerText = "Error: " + data.message;
+                }
+            } catch (e) {
+                status.innerText = "Connection failed";
+            }
+        }
+
+        function showDownload(filename) {
+            progFill.style.width = '100%';
+            status.innerText = "Success! File is ready.";
+            dlBtn.style.display = 'block';
+            dlBtn.href = '/downloads/' + filename;
+            dlBtn.click(); // Auto download
+        }
+
+        async function pollStatus(jobId) {
+            const interval = setInterval(async () => {
+                const res = await fetch(`/status/${jobId}`);
+                const data = await res.json();
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    showDownload(data.filename);
+                }
+            }, 3000);
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+</body>
+</html>

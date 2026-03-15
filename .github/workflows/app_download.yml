@@ -1,0 +1,48 @@
+name: App Download Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'Instagram Reel/Video URL (from App)'
+        required: true
+      callback_url:
+        description: 'Hugging Face Callback URL'
+        required: false
+
+jobs:
+  download:
+    name: Mobile App Download Task
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install yt-dlp requests
+
+      - name: Download Video
+        id: dl
+        run: |
+          mkdir -p output
+          python -m yt_dlp "${{ github.event.inputs.video_url }}" -o "output/app_video.%(ext)s"
+          REAL_PATH=$(ls output/app_video.* | head -n 1)
+          echo "file_path=$REAL_PATH" >> $GITHUB_OUTPUT
+
+      - name: Send to Callback
+        if: ${{ github.event.inputs.callback_url != '' }}
+        run: |
+          curl -X POST -F "file=@${{ steps.dl.outputs.file_path }}" "${{ github.event.inputs.callback_url }}"
+
+      - name: Upload Artifact (Backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-downloaded-video
+          path: output/
