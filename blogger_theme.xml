@@ -1301,13 +1301,11 @@
                 return `${API_BASE}/proxy-img?url=${encodeURIComponent(rawUrl)}`;
             }
 
-            function getProxyUrl(rawUrl, name) {
-                if (!rawUrl || rawUrl === "#") return "#";
-                let finalUrl = rawUrl;
-                if (rawUrl.startsWith('/files/')) {
-                    finalUrl = API_BASE + rawUrl;
-                }
-                return `${API_BASE}/dl-proxy?url=${encodeURIComponent(finalUrl)}&name=${encodeURIComponent(name)}`;
+            function getProxyUrl(url, name) {
+                if (!url) return '';
+                // Internal files don't need proxying
+                if (url.includes(API_BASE) && url.includes('/files/')) return url;
+                return `${API_BASE}/dl-proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`;
             }
 
             async function startDownload() {
