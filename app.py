@@ -25,9 +25,9 @@ CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "
 
 # SECURITY CONFIG
 ALLOWED_ORIGINS = [
-    "https://argha-7.blogspot.com",
     "https://www.instastream.online",
     "https://instastream.online",
+    "https://argha-7.blogspot.com",
     "http://localhost:5000",
     "http://127.0.0.1:5000"
 ]

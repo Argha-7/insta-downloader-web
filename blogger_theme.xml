@@ -1513,7 +1513,7 @@
                     document.getElementById('navCredits').innerText = credits;
                     document.getElementById('navBalance').innerText = balance.toFixed(2);
                     document.getElementById('dashBalance').innerText = balance.toFixed(2);
-                    document.getElementById('refUrl').value = `https://argha-7.blogspot.com?ref=${referralID}`;
+                    document.getElementById('refUrl').value = `https://www.instastream.online/?ref=${referralID}`;
                     
                     if (credits < 10) {
                         document.getElementById('walletDisplay').style.background = 'rgba(239, 68, 68, 0.1)';
