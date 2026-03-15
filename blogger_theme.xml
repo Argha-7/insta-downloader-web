@@ -1455,21 +1455,27 @@
                 const qualities = data.qualities || {};
                 
                 // If we have a local filename, it's the most reliable source for HD/SD
-                const localPath = filename ? `/files/${filename}` : null;
-                
-                // HD Button (Server 1)
+                const localPath = filename ? `/files/${filename}` : null;                // Quality Buttons & Main Download Button
                 const hdSource = localPath || qualities['1080p'] || qualities['720p'];
-                document.getElementById('qualityHD').href = getProxyUrl(hdSource, "InstaStream_HD.mp4");
+                const hdUrl = getProxyUrl(hdSource, "InstaStream_HD.mp4");
+                
+                // Primary button from the screenshot
+                const mainBtn = document.getElementById('downloadLink');
+                if (mainBtn) mainBtn.href = hdUrl;
 
-                // SD Button (Server 2)
+                // Secondary/Quality options (if present in theme)
+                const qHD = document.getElementById('qualityHD');
+                if (qHD) qHD.href = hdUrl;
+
                 const sdSource = localPath || qualities['720p'] || qualities['1080p'];
-                document.getElementById('qualitySD').href = getProxyUrl(sdSource, "InstaStream_SD.mp4");
+                const qSD = document.getElementById('qualitySD');
+                if (qSD) qSD.href = getProxyUrl(sdSource, "InstaStream_SD.mp4");
 
-                // MP3 (Audio Only)
-                document.getElementById('qualityMP3').href = getProxyUrl(hdSource, "InstaStream_Audio.mp3");
+                const qMP3 = document.getElementById('qualityMP3');
+                if (qMP3) qMP3.href = getProxyUrl(hdSource, "InstaStream_Audio.mp3");
 
-                // Thumbnail Download
-                document.getElementById('qualityThumb').href = getProxyUrl(thumbUrl, "InstaStream_Thumb.jpg");
+                const qThumb = document.getElementById('qualityThumb');
+                if (qThumb) qThumb.href = getProxyUrl(thumbUrl, "InstaStream_Thumb.jpg");
                 // Refresh limits
                 if(typeof updateLimits === 'function') updateLimits();
                 
