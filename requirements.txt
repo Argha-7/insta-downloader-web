@@ -6,3 +6,4 @@ flask-cors
 flask-limiter
 requests
 firebase-admin
+gunicorn
