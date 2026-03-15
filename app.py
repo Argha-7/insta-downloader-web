@@ -223,10 +223,6 @@ def cleanup_files():
 
 threading.Thread(target=cleanup_files, daemon=True).start()
 
-@app.route('/api/stats')
-def get_stats():
-    return jsonify(load_stats())
-
 @app.route('/manifest.json')
 def serve_manifest():
     return send_from_directory('static', 'manifest.json')
@@ -400,16 +396,16 @@ def handle_download():
         return jsonify({
             'success': True, 
             'status': 'ready', 
-            'filename': result['filename'],
-            'title': result['title'],
-            'thumbnail': proxy_thumb,
+            'filename': result.get('filename'),
+            'title': result.get('title', 'Instagram Video'),
+            'thumbnail': raw_thumb,
             'credits': user_data['credits'],
             'balance': round(user_data['balance'], 2),
             'video_url': result.get('hd_url') or result.get('sd_url'),
             'qualities': {
-                '1080p': get_dl_url(result.get('hd_url'), "1080p.mp4"),
-                '720p': get_dl_url(result.get('sd_url'), "720p.mp4"),
-                'thumb': get_dl_url(raw_thumb, "thumb.jpg")
+                '1080p': result.get('hd_url'),
+                '720p': result.get('sd_url'),
+                'thumb': raw_thumb
             }
         })
     elif status == "PENDING_GITHUB":
