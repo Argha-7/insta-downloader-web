@@ -423,6 +423,7 @@ def handle_download():
     else:
         return jsonify({'success': False, 'message': result})
 
+@app.route('/stats', methods=['GET'])
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     return jsonify(load_stats())
@@ -583,7 +584,7 @@ def get_preview():
                 'success': True,
                 'title': info.get('title', 'Instagram Video'),
                 'thumbnail': raw_thumb,
-                'video_url': video_url,
+                'video_url': hd_url,
                 'qualities': {
                     '1080p': hd_url,
                     '720p': sd_url,
@@ -591,7 +592,8 @@ def get_preview():
                 }
             })
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 403
+        print(f"PREVIEW ERROR: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/status/<job_id>')
 def check_status(job_id):

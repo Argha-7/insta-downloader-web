@@ -1250,7 +1250,7 @@
 
             async function updateStats() {
                 try {
-                    const res = await fetch(`${API_BASE}/api/stats`);
+                    const res = await fetch(`${API_BASE}/stats`);
                     const data = await res.json();
                     
                     // Important: Always grow, never shrink
