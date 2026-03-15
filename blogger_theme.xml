@@ -834,7 +834,7 @@
                     <input id="upiInput" placeholder="example@ybl" style="width:100%; padding: 12px; border-radius:10px; border:1px solid #e2e8f0; margin-top:5px;" type="text"/>
                 </div>
                 <button class="btn-withdraw" onclick="withdraw()">Withdraw to UPI</button>
-                <p style="font-size:0.7rem; color:#94a3b8; margin-top:15px;">Min. withdrawal: ₹50.00 | Processed in 24h</p>
+                <p style="font-size:0.7rem; color:#94a3b8; margin-top:15px;">Min. withdrawal: ₹10.00 | Processed in 24h</p>
             </div>
         </div>
 

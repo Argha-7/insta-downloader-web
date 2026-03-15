@@ -460,11 +460,34 @@ def handle_withdraw():
     user_data = get_user_data(ip)
     upi_id = request.json.get('upi_id')
     
-    if user_data['balance'] < 50:
-        return jsonify({'success': False, 'message': 'Minimum withdrawal is ₹50.00'}), 400
+    if user_data['balance'] < 10:
+        return jsonify({'success': False, 'message': 'Minimum withdrawal is ₹10.00'}), 400
         
-    # In a real app, you'd save this to a database
-    print(f"WITHDRAW REQUEST: User {ip} requested withdrawal of ₹{user_data['balance']} to UPI: {upi_id}")
+    # Persistent Tracking Logic
+    tracking_data = {
+        'id': str(uuid.uuid4()),
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+        'ip': ip,
+        'user_key': user_data.get('referral_id', 'unknown'),
+        'amount': round(user_data['balance'], 2),
+        'upi_id': upi_id
+    }
+    
+    try:
+        withdrawals = []
+        if os.path.exists('withdrawals.json'):
+            with open('withdrawals.json', 'r') as f:
+                withdrawals = json.load(f)
+        
+        withdrawals.append(tracking_data)
+        
+        with open('withdrawals.json', 'w') as f:
+            json.dump(withdrawals, f, indent=4)
+            
+        print(f"WITHDRAW LOGGED: User {ip} requested ₹{user_data['balance']} to {upi_id}")
+    except Exception as e:
+        print(f"TRACKING ERROR: {e}")
+
     return jsonify({'success': True, 'message': 'Withdrawal request sent! We will process it within 24 hours.'})
 
 @app.route('/reward-share', methods=['POST'])
