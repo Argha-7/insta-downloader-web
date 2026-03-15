@@ -8,9 +8,9 @@
     <head>
         <meta charset='UTF-8'/>
         <meta content='width=device-width, initial-scale=1.0' name='viewport'/>
-        <title>Instagram Downloader - Download Instagram Video, Reels, Stories &amp; Photos | InstaStream AI</title>
-        <meta content='InstaStream AI is the fastest tool to download Instagram Videos, Reels, Photos, Stories, and IGTV. Save high-quality Instagram content on any device for free.' name='description'/>
-        <meta content='instagram downloader, download instagram video, instagram reels downloader, ig downloader, story saver, download igtv, save instagram photos, instagram video downloader online' name='keywords'/>
+        <title>Instagram Video Downloader - Download Reels, Photos &amp; Stories | InstaStream AI</title>
+        <meta content='InstaStream AI is the fastest Instagram Video Downloader to save Reels, Photos, Stories, IGTV, and Carousel/Albums in original HD quality. Free, secure, and no account needed.' name='description'/>
+        <meta content='instagram downloader, instagram video downloader, reels downloader, instagram story saver, ig downloader, igtv downloader, download instagram photos, carousel downloader, album downloader, instagram mp4 download, online instagram downloader, save ig video' name='keywords'/>
 
         <!-- Open Graph / Facebook -->
         <meta content='website' property='og:type'/>
@@ -867,7 +867,7 @@
 
         <main class='hero animate'>
             <h1 style='font-weight: 800; margin-bottom: 15px; line-height: 1.1;'>
-                Download Instagram <span id='typing-text' style='color: var(--primary);'>Videos</span>
+                Best Instagram <span id='typing-text' style='color: var(--primary);'>Video Downloader</span>
             </h1>
             <div class="live-badge animate delay-1">
                 <div class="pulse-dot"></div>
@@ -985,8 +985,12 @@
                         <p style="color: #64748b;">Yes, we always provide the highest resolution available from Instagram (up to 1080p Full HD) for all video and image downloads.</p>
                     </div>
                     <div style="margin-bottom: 30px; background: white; padding: 25px; border-radius: 20px; box-shadow: var(--shadow);">
-                        <h4 style="color: var(--primary); margin-bottom: 10px;">Do you store user data or videos?</h4>
-                        <p style="color: #64748b;">No, we respect your privacy. We do not store any of your private info or the videos you download. Everything is processed temporarily.</p>
+                        <h4 style="color: var(--primary); margin-bottom: 10px;">Do I need to login to download?</h4>
+                        <p style="color: #64748b;">No, you do not need to log in or share your account details. InstaStream AI is completely anonymous and secure.</p>
+                    </div>
+                    <div style="margin-bottom: 30px; background: white; padding: 25px; border-radius: 20px; box-shadow: var(--shadow);">
+                        <h4 style="color: var(--primary); margin-bottom: 10px;">Is it legal and safe to use?</h4>
+                        <p style="color: #64748b;">Yes, downloading public content for personal use is generally safe. Our tool is secure, virus-free, and respects user privacy.</p>
                     </div>
                 </div>
             </section>
@@ -996,19 +1000,19 @@
 
         <section class='features animate' id='features' style='background: linear-gradient(-45deg, #f8fafc, #eff6ff, #f8fafc); background-size: 400% 400%; animation: bgShift 15s ease infinite;'>
             <div class='f-card animate delay-1'>
-                <i class="fas fa-bolt"></i>
-                <h3>Turbo Speed</h3>
-                <p>Advanced multi-threaded technology ensures your downloads are finished in seconds, not minutes.</p>
+                <i class="fas fa-video"></i>
+                <h3>Reels Downloader</h3>
+                <p>Download your favorite Instagram Reels in high definition. Fast, easy, and no watermark.</p>
             </div>
             <div class='f-card animate delay-2'>
-                <i class="fas fa-shield-halved"></i>
-                <h3>Privacy First</h3>
-                <p>We don't store your data or link history. Everything is processed and deleted instantly.</p>
+                <i class="fas fa-images"></i>
+                <h3>Carousel Downloader</h3>
+                <p>Save entire Instagram albums and gallery posts (Carousel) with a single click. Every photo and video included.</p>
             </div>
             <div class='f-card animate delay-1' style='animation-delay:0.6s;'>
-                <i class="fas fa-infinity"></i>
-                <h3>Smart Failover</h3>
-                <p>Exclusive AI technology that automatically switches servers if Instagram blocks the connection.</p>
+                <i class="fas fa-bolt"></i>
+                <h3>IGTV Downloader</h3>
+                <p>Download long-form IGTV videos to your device for offline viewing anytime, anywhere.</p>
             </div>
         </section>
 
@@ -1650,7 +1654,7 @@
 
             // 1. Typing Effect Logic
             const typingText = document.getElementById('typing-text');
-            const phrases = ["Reels", "Stories", "IGTV", "Videos", "Photos"];
+            const phrases = ["Reels Downloader", "Story Saver", "IGTV Download", "Video Downloader", "Photo Download"];
             let phraseIdx = 0;
             let charIdx = 0;
             let isDeleting = false;
