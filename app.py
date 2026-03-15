@@ -288,7 +288,7 @@ def trigger_github_action(video_url, job_id, workflow="download.yml"):
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
         if response.status_code == 204:
             print(f"GitHub Action triggered for Job: {job_id}")
             return True
@@ -519,7 +519,7 @@ def proxy_image():
     url = request.args.get('url')
     if not url: return "No URL", 400
     try:
-        resp = requests.get(url, stream=True, timeout=10, headers={
+        resp = requests.get(url, stream=True, timeout=30, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
         })
         # Only return content and content-type to be safe
@@ -540,7 +540,7 @@ def dl_proxy():
     name = request.args.get('name', 'video.mp4')
     if not url: return "No URL", 400
     try:
-        resp = requests.get(url, stream=True, timeout=20, headers={
+        resp = requests.get(url, stream=True, timeout=60, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
             'Accept': '*/*',
         })
