@@ -903,7 +903,7 @@
 
             <div class='progress-card' id='progressUI'>
                 <div class="progress-header">
-                    <img class="prog-thumb" id="progThumb" src="https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"/>
+                    <img class="prog-thumb" id="progThumb" src="https://cdn-icons-png.flaticon.com/512/174/174855.png"/>
                     <div class="prog-info">
                         <div class="prog-title" id="progTitle">Analyzing video...</div>
                         <div id='statusText'>Initializing...</div>
@@ -1402,7 +1402,7 @@
                             showSuccess({
                                 filename: data.filename,
                                 title: currentMetadata.title || "Instagram Video",
-                                thumbnail: currentMetadata.thumbnail || "https://icons.iconarchive.com/icons/paomedia/small-n-flat/512/social-instagram-icon.png"
+                                thumbnail: currentMetadata.thumbnail || "https://cdn-icons-png.flaticon.com/512/174/174855.png"
                             });
                         } else {
                             statusText.innerText = `Video Processing... (${count * 5}s)`;
