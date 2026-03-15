@@ -14,6 +14,10 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
+
+@app.route('/debug/version')
+def debug_version():
+    return jsonify({"version": "v29-final-stability", "time": time.time()})
 # Global lock for user_credits to prevent race conditions
 data_lock = threading.Lock()
 # Simplified CORS for debugging - allows all origins and headers temporarily
