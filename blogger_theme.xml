@@ -804,7 +804,7 @@
             <div style="display: flex; gap: 15px; align-items: center;" class="nav-links">
                 <div class="nav-wallet" id="walletDisplay" onclick="updateCredits()" title="Points Balance">
                     <i class="fas fa-coins"></i>
-                    <span id="navCredits">50</span>
+                    <span id="navCredits">100</span>
                 </div>
                 <div class="nav-wallet nav-cash" onclick="openDashboard()" title="Earnings Dashboard">
                     <i class="fas fa-wallet"></i> ₹                    <span id="navBalance">0.00</span>
