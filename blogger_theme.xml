@@ -1354,13 +1354,25 @@
                             currentMetadata = prevData;
                             document.getElementById('progThumb').src = getProxyImgUrl(prevData.thumbnail);
                             document.getElementById('progTitle').innerText = prevData.title;
+                            
+                            // IF PREVIEW HAS URL, SHOW IT IMMEDIATELY (FAST!)
+                            if (prevData.video_url || (prevData.qualities && prevData.qualities['1080p'])) {
+                                showSuccess(prevData);
+                                // Confetti burst on success! 🎉
+                                confetti({
+                                    particleCount: 150,
+                                    spread: 70,
+                                    origin: { y: 0.6 },
+                                    colors: ['#3b82f6', '#2dd4bf', '#f09433', '#e6683c']
+                                });
+                            }
                         }
                     }
                 } catch (e) {
                     console.log("Preview failed:", e);
                 }
 
-                // 2. Start Actual Download
+                // 2. Trigger Official Download (Async) & Credit Deduction
                 try {
                     const dlRes = await fetch(`${API_BASE}/download`, {
                         method: 'POST',
@@ -1370,22 +1382,17 @@
                     const data = await dlRes.json();
 
                     if (data.success) {
-                        if (data.status === 'ready') {
-                            showSuccess(data);
-                            // Confetti burst on success! 🎉
-                            confetti({
-                                particleCount: 150,
-                                spread: 70,
-                                origin: { y: 0.6 },
-                                colors: ['#3b82f6', '#2dd4bf', '#f09433', '#e6683c']
-                            });
-                        } else if (data.status === 'pending') {
-                            statusText.innerText = 'Server blocked. Activating Smart Backup...';
-                            progressBar.style.width = '50%';
-                            pollStatus(data.job_id);
+                        // If we didn't show success already from preview, update progress
+                        if (document.getElementById('result').style.display !== 'block') {
+                            progressBar.style.width = '60%';
+                            statusText.innerText = 'Acquiring high-speed link...';
                         }
+                        pollStatus(data.job_id);
                     } else {
-                        showError(data.message || 'Error occurred');
+                        // Only show error if we haven't shown success yet
+                        if (document.getElementById('result').style.display !== 'block') {
+                            showError(data.message || 'Error occurred');
+                        }
                     }
                 } catch (e) {
                     showError('Connection Error. Check console.');
@@ -1839,7 +1846,7 @@
             });
         </script>
 
-        <!-- Adsterra Social Bar -->
-        <script src="https://pl28916218.effectivegatecpm.com/40/88/33/408833b1ca42ebb371b46e0cb5d63676.js"></script>
-    </body>
-</html>
+<!-- Adsterra Social Bar -->
+<script src="https://pl28916218.effectivegatecpm.com/40/88/33/408833b1ca42ebb371b46e0cb5d63676.js"></script>
+        </body>
+    </html>

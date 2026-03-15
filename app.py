@@ -299,7 +299,7 @@ def trigger_github_action(video_url, job_id, workflow="download.yml"):
         print(f"GitHub Trigger Exception: {e}")
         return False
 
-def download_video(url):
+def download_video(url, existing_job_id=None):
     """Main download logic with local-first, then GitHub failover."""
     if '?' in url:
         url = url.split('?')[0]
@@ -360,6 +360,37 @@ def download_video(url):
         
         return "FAILED", f"Error: {err_str[:100]}"
 
+def process_video_task(url, job_id, user_key):
+    """Background task to process video and update job_status."""
+    try:
+        # Pass job_id to maintain consistency
+        status, result = download_video(url, existing_job_id=job_id)
+        if status == "SUCCESS":
+            job_status[job_id] = {
+                'status': 'ready', 
+                'filename': result.get('filename'),
+                'title': result.get('title', 'Instagram Video'),
+                'thumbnail': result.get('thumbnail', ''),
+                'video_url': result.get('hd_url') or result.get('sd_url'),
+                'qualities': {
+                    '1080p': result.get('hd_url'),
+                    '720p': result.get('sd_url'),
+                    'thumb': result.get('thumbnail')
+                }
+            }
+            # Record rewards for successful download completion
+            with data_lock:
+                if user_key in user_credits:
+                    user_credits[user_key]['balance'] += DOWNLOAD_CASH_REWARD
+        elif status == "PENDING_GITHUB":
+            # download_video already handled the pending status
+            pass 
+        else:
+            job_status[job_id] = {'status': 'failed', 'message': result}
+    except Exception as e:
+        print(f"ASYNC TASK ERROR: {e}")
+        job_status[job_id] = {'status': 'failed', 'message': str(e)}
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -371,61 +402,36 @@ def handle_download():
         return jsonify({'success': False, 'message': 'Unauthorized Access'}), 403
     
     data = request.json or {}
-    gift = data.get('gift') or request.args.get('gift')
-    device_id = data.get('device_id')
-    
-    ip = get_client_ip()
-    user_data = get_user_data(ip, gift=gift, device_id=device_id)
-    
-    if user_data['credits'] < DOWNLOAD_COST:
-        return jsonify({'success': False, 'message': f'Insufficient credits ({user_data["credits"]}). Share on WhatsApp to earn more!'}), 403
-
-    data = request.json
     url = data.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
+
+    ip = get_client_ip()
+    user_key = ip
+    if hasattr(request, 'fb_user'): user_key = request.fb_user['uid']
     
-    status, result = download_video(url)
+    user_data = get_user_data(ip, device_id=data.get('device_id'))
     
-    if status == "SUCCESS":
-        user_data['credits'] -= DOWNLOAD_COST
-        user_data['balance'] += DOWNLOAD_CASH_REWARD
-        raw_thumb = result.get('thumbnail', '')
-        # Extract raw CDN links for qualities (Frontend will proxy them)
-        
-        # Note: 'result' here comes from download_video which currently only returns filename, title, thumb
-        # I should probably update download_video to return all info or just use placeholder qualities if not found
-        # Actually, let's keep it simple: if hd_url isn't in result, we use the preview's qualities if available on frontend
-        # But for consistency, let's try to get them here too if possible
-        
-        return jsonify({
-            'success': True, 
-            'status': 'ready', 
-            'filename': result.get('filename'),
-            'title': result.get('title', 'Instagram Video'),
-            'thumbnail': raw_thumb,
-            'credits': user_data['credits'],
-            'balance': round(user_data['balance'], 2),
-            'video_url': result.get('hd_url') or result.get('sd_url'),
-            'qualities': {
-                '1080p': result.get('hd_url'),
-                '720p': result.get('sd_url'),
-                'thumb': raw_thumb
-            }
-        })
-    elif status == "PENDING_GITHUB":
-        user_data['credits'] -= DOWNLOAD_COST
-        user_data['balance'] += DOWNLOAD_CASH_REWARD
-        # GitHub action update: we won't have metadata immediately
-        return jsonify({
-            'success': True, 
-            'status': 'pending', 
-            'job_id': result, 
-            'credits': user_data['credits'], 
-            'balance': round(user_data['balance'], 2),
-            'message': 'Hugging Face is blocked. Switching to GitHub Backup...' 
-        })
-    else:
-        return jsonify({'success': False, 'message': result})
+    if user_data['credits'] < DOWNLOAD_COST:
+        return jsonify({'success': False, 'message': f'Low Credits. Share to earn more!'}), 403
+
+    # Deduct credits early to prevent abuse
+    user_data['credits'] -= DOWNLOAD_COST
+    
+    # Generate Job ID and start background thread
+    job_id = str(uuid.uuid4())
+    job_status[job_id] = {'status': 'pending', 'timestamp': time.time()}
+    
+    thread = threading.Thread(target=process_video_task, args=(url, job_id, user_key))
+    thread.daemon = True
+    thread.start()
+
+    return jsonify({
+        'success': True, 
+        'status': 'pending', 
+        'job_id': job_id,
+        'credits': user_data['credits'],
+        'balance': round(user_data['balance'], 2)
+    })
 
 @app.route('/stats', methods=['GET'])
 @app.route('/api/stats', methods=['GET'])
