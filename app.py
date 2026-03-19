@@ -792,16 +792,19 @@ def github_callback():
         print(f"CALLBACK FAILED: Job {job_id} not found.")
         return "Invalid Job ID", 400
     
-    if 'file' not in request.files:
-        print(f"CALLBACK FAILED: No file in request for Job {job_id}")
-        return "No file", 400
+    file = request.files.get('file')
+    filename = None
+    if file:
+        filename = f"gh_{int(time.time())}_{file.filename}"
+        file.save(os.path.join(DOWNLOAD_FOLDER, filename))
     
-    file = request.files['file']
-    filename = f"gh_{int(time.time())}_{file.filename}"
-    file.save(os.path.join(DOWNLOAD_FOLDER, filename))
+    direct_url = request.form.get('direct_url')
     
     # Preserve existing metadata (title, url, etc) if available in the job
-    updated_data = {'status': 'ready', 'filename': filename}
+    updated_data = {'status': 'ready'}
+    if filename: updated_data['filename'] = filename
+    if direct_url: updated_data['video_url'] = direct_url
+    
     if job.get('title'): updated_data['title'] = job['title']
     if job.get('thumbnail'): updated_data['thumbnail'] = job['thumbnail']
     if job.get('uploader'): updated_data['uploader'] = job['uploader']

@@ -39,7 +39,10 @@ jobs:
       - name: Send to Callback
         if: ${{ github.event.inputs.callback_url != '' }}
         run: |
-          curl -X POST -F "file=@${{ steps.dl.outputs.file_path }}" "${{ github.event.inputs.callback_url }}"
+          # Get direct URL
+          DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g || echo "")
+          # Send both file (backup) and direct URL (fast)
+          curl -X POST -F "file=@${{ steps.dl.outputs.file_path }}" -F "direct_url=$DIRECT_URL" "${{ github.event.inputs.callback_url }}"
 
       - name: Upload Artifact (Backup)
         uses: actions/upload-artifact@v7

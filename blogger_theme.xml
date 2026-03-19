@@ -1583,9 +1583,11 @@
                 const thumbUrl = getProxyImgUrl(rawThumb);
                 document.getElementById('resThumb').src = thumbUrl;
 
-                // Video Preview Logic
+                // Video Preview Logic: Prioritize direct URL from GitHub/Provider for speed
                 const videoEl = document.getElementById('resVideo');
                 const thumbEl = document.getElementById('resThumb');
+                
+                // data.video_url is now the fast direct link from GitHub
                 const videoUrl = data.video_url || (data.filename ? `${API_BASE}/files/${data.filename}` : null);
 
                 if (videoUrl) {
