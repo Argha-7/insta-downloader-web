@@ -382,10 +382,10 @@ def trigger_github_action(video_url, job_id, workflow="download.yml"):
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json",
     }
-    # Current Space URL for callback
+    # Current Space URL for callback (Enforce lowercase for HF compatibility)
     space_name = os.environ.get('SPACE_ID', '')
     if space_name:
-        callback_url = f"https://{space_name.replace('/', '-')}.hf.space/github-callback?job_id={job_id}"
+        callback_url = f"https://{space_name.replace('/', '-')}.hf.space/github-callback?job_id={job_id}".lower()
     else:
         # Fallback for local testing (won't work for callback but for trigger)
         callback_url = ""
@@ -777,11 +777,15 @@ def github_callback():
     job_id = request.args.get('job_id')
     job = get_job(job_id)
     
+    # Debug Logging to activity.json
+    log_activity('github_callback_receive', {'job_id': job_id, 'found': bool(job)})
+    
     if not job_id or not job:
         print(f"CALLBACK FAILED: Job {job_id} not found.")
         return "Invalid Job ID", 400
     
     if 'file' not in request.files:
+        print(f"CALLBACK FAILED: No file in request for Job {job_id}")
         return "No file", 400
     
     file = request.files['file']
