@@ -800,7 +800,13 @@ def github_callback():
     filename = f"gh_{int(time.time())}_{file.filename}"
     file.save(os.path.join(DOWNLOAD_FOLDER, filename))
     
-    save_job(job_id, {'status': 'ready', 'filename': filename})
+    # Preserve existing metadata (title, url, etc) if available in the job
+    updated_data = {'status': 'ready', 'filename': filename}
+    if job.get('title'): updated_data['title'] = job['title']
+    if job.get('thumbnail'): updated_data['thumbnail'] = job['thumbnail']
+    if job.get('uploader'): updated_data['uploader'] = job['uploader']
+    
+    save_job(job_id, updated_data)
     print(f"Job {job_id} READY via GitHub Callback.")
     return "OK", 200
 
@@ -819,9 +825,14 @@ def clear_cache():
 @app.route('/files/<path:filename>')
 def download_file(filename):
     log_activity('file_download_direct', {'filename': filename})
-    response = send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
+    # If dl=1 is present, force attachment. Otherwise allow inline (for preview).
+    as_attachment = request.args.get('dl') == '1'
+    response = send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=as_attachment)
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+    if not as_attachment:
+        # Help browsers recognize it's a video for inline playback
+        response.headers["Content-Type"] = "video/mp4"
     return response
 
 @app.route('/admin/activity')
