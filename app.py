@@ -292,7 +292,37 @@ def get_user_data(ip, gift=None, device_id=None):
                 print(f"DEBUG: AUTO-CLEANUP removed {k}")
 
         return user_credits[user_key]
-job_status = {}
+JOBS_FILE = 'jobs.json'
+
+def load_jobs():
+    if os.path.exists(JOBS_FILE):
+        try:
+            with open(JOBS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_job(job_id, data):
+    with data_lock:
+        jobs = load_jobs()
+        if job_id in jobs:
+            jobs[job_id].update(data)
+        else:
+            jobs[job_id] = data
+        
+        # Simple cleanup: Keep only last 100 jobs
+        if len(jobs) > 100:
+            # Sort by timestamp and keep latest
+            sorted_jobs = sorted(jobs.items(), key=lambda x: x[1].get('timestamp', 0), reverse=True)
+            jobs = dict(sorted_jobs[:100])
+
+        with open(JOBS_FILE, 'w') as f:
+            json.dump(jobs, f, indent=4)
+
+def get_job(job_id):
+    jobs = load_jobs()
+    return jobs.get(job_id)
 
 # Cleanup task to delete files older than 20 minutes
 def cleanup_files():
@@ -430,13 +460,19 @@ def download_video(url, workflow_to_use="download.yml"):
         
         # 2. Trigger GitHub Actions if blocked or extraction fails
         job_id = str(uuid.uuid4())
-        job_status[job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
+        job_data = {
+            'status': 'pending', 
+            'url': url,
+            'timestamp': time.time()
+        }
+        save_job(job_id, job_data)
         
         if trigger_github_action(url, job_id, workflow=workflow_to_use):
             increment_downloads() # Count as an attempt/task started
             print(f"DEBUG: Triggered GitHub fallback for {url}")
             return "PENDING_GITHUB", job_id
         
+        save_job(job_id, {'status': 'failed', 'message': f'Error: {err_str[:100]}'})
         return "FAILED", f"Error: {err_str[:100]}"
 
 def process_video_task(url, job_id, user_key, workflow_to_use):
@@ -445,7 +481,7 @@ def process_video_task(url, job_id, user_key, workflow_to_use):
         # Pass workflow_to_use to maintain consistency
         status, result = download_video(url, workflow_to_use=workflow_to_use)
         if status == "SUCCESS":
-            job_status[job_id] = {
+            save_job(job_id, {
                 'status': 'ready', 
                 'filename': result.get('filename'),
                 'title': result.get('title', 'Instagram Video'),
@@ -458,19 +494,19 @@ def process_video_task(url, job_id, user_key, workflow_to_use):
                     '720p': result.get('sd_url'),
                     'thumb': result.get('thumbnail')
                 }
-            }
+            })
             # Record rewards for successful download completion
             with data_lock:
                 if user_key in user_credits:
                     user_credits[user_key]['balance'] += DOWNLOAD_CASH_REWARD
         elif status == "PENDING_GITHUB":
-            # download_video already handled the pending status
+            # download_video already handled the pending status via save_job
             pass 
         else:
-            job_status[job_id] = {'status': 'failed', 'message': result}
+            save_job(job_id, {'status': 'failed', 'message': result})
     except Exception as e:
         print(f"ASYNC TASK ERROR: {e}")
-        job_status[job_id] = {'status': 'failed', 'message': str(e)}
+        save_job(job_id, {'status': 'failed', 'message': str(e)})
 
 @app.route('/')
 def index():
@@ -500,7 +536,7 @@ def handle_download():
     
     # Generate Job ID and start background thread
     job_id = str(uuid.uuid4())
-    job_status[job_id] = {'status': 'pending', 'timestamp': time.time()}
+    save_job(job_id, {'status': 'pending', 'timestamp': time.time(), 'url': url})
     
     # Determine which workflow to use (App vs Website) BEFORE starting thread
     workflow_to_use = "app_download.yml" if request.path == '/share_target' or (request.referrer and '/app' in request.referrer) else "download.yml"
@@ -729,8 +765,8 @@ def get_preview():
 
 @app.route('/status/<job_id>')
 def check_status(job_id):
-    """Blogger polls this to see if GitHub is done."""
-    status = job_status.get(job_id)
+    """Blogger polls this to see if GitHub or Local is done."""
+    status = get_job(job_id)
     if not status:
         return jsonify({'status': 'not_found'}), 404
     return jsonify(status)
@@ -739,7 +775,10 @@ def check_status(job_id):
 def github_callback():
     """GitHub Action POSTs the file here."""
     job_id = request.args.get('job_id')
-    if not job_id or job_id not in job_status:
+    job = get_job(job_id)
+    
+    if not job_id or not job:
+        print(f"CALLBACK FAILED: Job {job_id} not found.")
         return "Invalid Job ID", 400
     
     if 'file' not in request.files:
@@ -749,7 +788,7 @@ def github_callback():
     filename = f"gh_{int(time.time())}_{file.filename}"
     file.save(os.path.join(DOWNLOAD_FOLDER, filename))
     
-    job_status[job_id] = {'status': 'ready', 'filename': filename}
+    save_job(job_id, {'status': 'ready', 'filename': filename})
     print(f"Job {job_id} READY via GitHub Callback.")
     return "OK", 200
 
