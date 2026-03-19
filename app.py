@@ -9,7 +9,7 @@ import json
 import firebase_admin
 from firebase_admin import credentials, auth
 import urllib.parse
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -788,7 +788,11 @@ def admin_activity():
             except:
                 logs = []
     
-    return render_template('admin_activity.html', logs=logs)
+    response = make_response(render_template('admin_activity.html', logs=logs))
+    # Allow embedding in iFrames (needed for Blogger Page integration)
+    response.headers['X-Frame-Options'] = 'ALLOWALL' 
+    response.headers['Content-Security-Policy'] = "frame-ancestors *"
+    return response
 
 if __name__ == '__main__':
     # Local fallback for GH_REPO
