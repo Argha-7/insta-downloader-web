@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InstaStream - Premium Downloader</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Google tag (gtag.js) - Replace G-XXXXXXXXXX with your ID -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
     <style>
         :root {
             --primary: #ff0050;
@@ -224,6 +232,14 @@
             status.style.display = 'none';
             downloadBtn.disabled = true;
             downloadBtn.innerHTML = '<span class="loader"></span>Processing...';
+
+            // Analytics Event
+            if (typeof gtag === 'function') {
+                gtag('event', 'download_click', {
+                    'event_category': 'Engagement',
+                    'event_label': url
+                });
+            }
 
             try {
                 const response = await fetch('/download', {

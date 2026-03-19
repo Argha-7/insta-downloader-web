@@ -7,6 +7,14 @@
     <link rel="manifest" href="/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google tag (gtag.js) - Replace G-XXXXXXXXXX with your ID -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
     <style>
         :root {
             --primary: #3b82f6;
@@ -153,6 +161,14 @@
             status.innerText = "Processing Share...";
             progBar.style.display = 'block';
             progFill.style.width = '30%';
+
+            // Analytics Event
+            if (typeof gtag === 'function') {
+                gtag('event', 'app_download_start', {
+                    'event_category': 'Engagement',
+                    'event_label': url
+                });
+            }
 
             try {
                 const res = await fetch('/download', {

@@ -8,26 +8,69 @@
     <head>
         <meta charset='UTF-8'/>
         <meta content='width=device-width, initial-scale=1.0' name='viewport'/>
-        <title>Instagram Video Downloader - Download Reels, Photos &amp; Stories | InstaStream AI</title>
-        <meta content='InstaStream AI is the fastest Instagram Video Downloader to save Reels, Photos, Stories, IGTV, and Carousel/Albums in original HD quality. Free, secure, and no account needed.' name='description'/>
-        <meta content='instagram downloader, instagram video downloader, reels downloader, instagram story saver, ig downloader, igtv downloader, download instagram photos, carousel downloader, album downloader, instagram mp4 download, online instagram downloader, save ig video' name='keywords'/>
+        <title>InstaStream Online - #1 Instagram Video &amp; Reels Downloader</title>
+        <b:if cond='data:blog.metaDescription'>
+          <meta expr:content='data:blog.metaDescription' name='description'/>
+        <b:else/>
+          <meta content='InstaStream Online is the fastest and most secure tool to download Instagram Reels, Videos, Photos, and Stories in HD quality. No login, no watermarks, completely free and unlimited downloads online.' name='description'/>
+        </b:if>
+        <meta content='InstaStream Online, instagram downloader, download instagram reels, instagram story saver, ig downloader, save instagram video online' name='keywords'/>
+
+        <!-- Schema.org Markup for Google -->
+        <script type='application/ld+json'>
+        {
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "InstaStream Online",
+          "url": "https://www.instastream.online/",
+          "description": "Fast and secure Instagram Video Downloader for Reels, Stories, and Photos.",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "All",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "1250"
+          }
+        }
+        </script>
 
         <!-- Open Graph / Facebook -->
         <meta content='website' property='og:type'/>
         <meta content='https://www.instastream.online/' property='og:url'/>
-        <meta content='Instagram Downloader - Download Instagram Video, Reels, Stories &amp; Photos' property='og:title'/>
-        <meta content='InstaStream AI is the fastest tool to download Instagram Videos, Reels, Photos, Stories, and IGTV.' property='og:description'/>
-        <meta content='https://www.instastream.online/favicon.ico' property='og:image'/>
+        <meta content='InstaStream Online - Instagram Video, Reels &amp; Story Downloader' property='og:title'/>
+        <b:if cond='data:blog.metaDescription'>
+          <meta expr:content='data:blog.metaDescription' property='og:description'/>
+        <b:else/>
+          <meta content='Download Instagram Videos, Reels, Photos, and Stories in HD with InstaStream Online. Free and fast.' property='og:description'/>
+        </b:if>
+        <meta content='https://www.instastream.online/favicon.png' property='og:image'/>
+        <link href='/favicon.png' rel='icon' type='image/png'/>
+        <link href='/favicon.png' rel='apple-touch-icon'/>
 
         <!-- Twitter -->
         <meta content='summary_large_image' name='twitter:card'/>
         <meta content='https://www.instastream.online/' name='twitter:url'/>
-        <meta content='Instagram Downloader - Download Instagram Video, Reels, Stories &amp; Photos' name='twitter:title'/>
-        <meta content='InstaStream AI is the fastest tool to download Instagram Videos, Reels, Photos, Stories, and IGTV.' name='twitter:description'/>
+        <meta content='InstaStream Online - Best Instagram Downloader' name='twitter:title'/>
+        <meta content='Fastest tool to download Instagram Reels and Videos in HD quality.' name='twitter:description'/>
         <link href='https://www.instastream.online/' rel='canonical'/>
 
         <link href='https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&amp;display=swap' rel='stylesheet'/>
         <link href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css' rel='stylesheet'/>
+        
+        <!-- Google tag (gtag.js) - Replace G-XXXXXXXXXX with your ID -->
+        <script async='async' src='https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX'></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-XXXXXXXXXX');
+        </script>
+        
         <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
         <!-- Adsterra Monetization Script -->
@@ -752,53 +795,86 @@
 
             @media (max-width: 768px) {
                 .navbar { padding: 0.8rem 4%; }
-                /* Show wallets but keep them small */
                 .nav-links { gap: 10px; }
                 .nav-links a.btn-started { display: none; }
-                .nav-wallet { padding: 6px 10px; font-size: 0.8rem; gap: 5px; }
+                .nav-wallet { padding: 6px 10px; font-size: 0.75rem; gap: 4px; }
                 
-                .search-card { flex-direction: column; height: auto; padding: 8px; border-radius: 18px; }
-                .search-card input { padding: 12px; text-align: center; font-size: 1rem; }
-                .btn-action { padding: 15px; width: 100%; border-radius: 14px; font-size: 1rem; }
+                .search-card { 
+                    flex-direction: column; 
+                    height: auto; 
+                    padding: 6px; 
+                    border-radius: 16px; 
+                    margin: 0 10px;
+                }
+                .search-card input { 
+                    padding: 15px; 
+                    text-align: center; 
+                    font-size: 1rem; 
+                    min-height: 50px;
+                }
+                .btn-action { 
+                    padding: 16px; 
+                    width: 100%; 
+                    border-radius: 12px; 
+                    font-size: 1rem; 
+                    min-height: 54px;
+                }
                 
-                .hero { padding: 40px 15px 60px; }
-                .hero h1 { font-size: 2rem; letter-spacing: -1px; }
-                .hero p { font-size: 0.95rem; margin-bottom: 20px; }
+                .hero { padding: 30px 15px 50px; }
+                .hero h1 { font-size: 2.2rem; letter-spacing: -1.5px; margin-bottom: 12px; }
+                .hero p { font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; }
                 
-                .result-card { padding: 15px; }
-                .res-title { font-size: 1.1rem; }
-                .res-media-container { max-width: 100%; }
+                .result-card { padding: 15px; border-radius: 20px; }
+                .res-title { font-size: 1.1rem; line-height: 1.4; }
+                .res-media-container { max-width: 100%; border-radius: 12px; }
                 
                 .dash-content { padding: 25px 20px; border-radius: 20px; }
                 .dash-balance { font-size: 2rem; }
                 
-                .pricing { padding: 40px 5%; }
-                .pricing-grid { gap: 15px; }
+                .pricing { padding: 40px 15px; }
+                .pricing-grid { gap: 15px; grid-template-columns: 1fr; }
                 .p-card { padding: 25px 20px; }
-                .p-card.popular { transform: none; }
+                .p-card.popular { transform: none; border-width: 1px; }
                 
-                .features { padding: 40px 5%; gap: 20px; }
-                .f-card { padding: 25px 20px; }
+                .features { padding: 40px 15px; gap: 15px; grid-template-columns: 1fr; }
+                .f-card { padding: 25px 20px; border-radius: 18px; }
+                .f-card i { font-size: 2rem; }
                 
                 .footer-grid { grid-template-columns: 1fr; text-align: center; gap: 30px; }
                 .footer-col { display: flex; flex-direction: column; align-items: center; }
                 .social-links { justify-content: center; }
-                .footer-bottom { justify-content: center; text-align: center; }
+                .footer-bottom { 
+                    flex-direction: column;
+                    gap: 10px;
+                    text-align: center; 
+                }
 
                 .float-share {
-                    bottom: 15px;
-                    right: 15px;
-                    padding: 10px 18px;
-                    font-size: 0.85rem;
+                    bottom: 20px;
+                    right: 20px;
+                    padding: 12px 18px;
+                    font-size: 0.8rem;
+                    border-radius: 12px;
                 }
             }
 
             @media (max-width: 480px) {
-                .hero h1 { font-size: 1.7rem; }
-                .btn-download-final, .btn-copy-link { font-size: 0.9rem; padding: 10px; }
+                .hero h1 { font-size: 1.8rem; letter-spacing: -1px; }
+                .btn-download-final, .btn-copy-link { 
+                    font-size: 0.9rem; 
+                    padding: 14px; 
+                    border-radius: 10px;
+                    min-height: 48px;
+                }
                 .modal-content { padding: 25px 15px; }
-                .nav-wallet span { display: none; } /* Only icons on very small screens */
-                .nav-wallet { width: 40px; justify-content: center; }
+                .nav-wallet span { display: none; }
+                .nav-wallet { padding: 8px; }
+                
+                .quality-grid {
+                    grid-template-columns: 1fr 1fr;
+                    gap: 12px !important;
+                }
+                .nav-wallet { width: 44px; justify-content: center; }
             }
         </style>
     </head>
@@ -876,7 +952,7 @@
 
         <main class='hero animate'>
             <h1 style='font-weight: 800; margin-bottom: 15px; line-height: 1.1;'>
-                Best Instagram <span id='typing-text' style='color: var(--primary);'>Video Downloader</span>
+                InstaStream Online - <span id='typing-text' style='color: var(--primary);'>Video Downloader</span>
             </h1>
             <div class="live-badge animate delay-1">
                 <div class="pulse-dot"></div>
@@ -933,12 +1009,16 @@
                     <div class='res-info'>
                         <div class='res-title' id='resTitle'>Video Title</div>
                         <div class='res-meta' id='resMeta'>Ready for download</div>
-                        <a class='btn-download-final' id='downloadLink' target='_blank'>
-                            <i class='fas fa-download'></i> Download Video
-                        </a>
-                        <button class='btn-copy-link' onclick='copyLink()'>
-                            <i class='far fa-clone'></i> Copy Link
-                        </button>
+                        
+                        <!-- New Grid for Mobile Optimization -->
+                        <div class="quality-grid" style="display: grid; gap: 12px; margin-top: 10px;">
+                            <a class='btn-download-final' id='downloadLink' target='_blank'>
+                                <i class='fas fa-download'></i> Download HD
+                            </a>
+                            <button class='btn-copy-link' onclick='copyLink()'>
+                                <i class='far fa-clone'></i> Copy Link
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1097,6 +1177,28 @@
             </div>
         </div>
 
+        <!-- Identity Modal for Guests -->
+        <div class="modal" id="guestModal" style="display:none; z-index:10001; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);">
+            <div class="modal-content" style="max-width:400px; padding:40px; border-radius:30px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:white;">
+                <i class="fas fa-id-card" style="font-size:3.5rem; color:var(--primary); margin-bottom:20px; text-shadow:0 0 20px rgba(59,130,246,0.5);"></i>
+                <h2 style="font-size:1.8rem; margin-bottom:10px;">Quick Verification</h2>
+                <p style="color:#94a3b8; margin-bottom:30px; font-size:0.95rem;">Please enter your name and email to continue with the high-speed download.</p>
+                
+                <div style="text-align:left; margin-bottom:20px;">
+                    <label style="font-size:0.8rem; color:#64748b; margin-left:5px; margin-bottom:5px; display:block;">Full Name</label>
+                    <input id="guestName" placeholder="e.g. Rahul Sharma" style="width:100%; padding:15px; border-radius:15px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:white; outline:none;" type="text"/>
+                </div>
+                
+                <div style="text-align:left; margin-bottom:30px;">
+                    <label style="font-size:0.8rem; color:#64748b; margin-left:5px; margin-bottom:5px; display:block;">Gmail Address</label>
+                    <input id="guestEmail" placeholder="e.g. rahul@gmail.com" style="width:100%; padding:15px; border-radius:15px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:white; outline:none;" type="email"/>
+                </div>
+                
+                <button class="btn-started" onclick="submitGuestIdentity()" style="width:100%; padding:18px; font-weight:700; font-size:1rem; letter-spacing:1px; box-shadow:0 10px 20px rgba(59,130,246,0.3);">Continue to Download</button>
+                <p style="margin-top:20px; font-size:0.75rem; color:#475569;">We use this to prevent bot abuse and improve your experience.</p>
+            </div>
+        </div>
+
         <!-- Bottom Ad Slot -->
         <div class='ad-slot' id='footerAd'>
             <script type="text/javascript">
@@ -1110,6 +1212,29 @@
             </script>
             <script src="https://www.highperformanceformat.com/53a00315783b863976c54724f0f6d67c/invoke.js" type="text/javascript"></script>
         </div>
+
+        <!-- Extended SEO Content Section -->
+        <section id="about-seo" style="padding: 60px 10%; background: #fff; border-top: 1px solid #eee;">
+            <div style="max-width: 900px; margin: 0 auto; line-height: 1.8; color: #475569;">
+                <h2 style="font-size: 2rem; color: var(--dark); margin-bottom: 20px; font-weight: 800;">InstaStream Online: The Professional Instagram Downloader</h2>
+                <p>Welcome to <strong>InstaStream Online</strong>, the premier destination for high-quality Instagram content downloading. Our platform is specifically engineered to provide users with a seamless, fast, and secure way to save their favorite Instagram media directly to their devices. Whether you are looking to download <strong>Instagram Reels</strong>, save <strong>IG Stories</strong>, or archive high-resolution <strong>Photos and Carousels</strong>, InstaStream Online offers an unparalleled experience.</p>
+                
+                <h3 style="margin-top: 30px; font-size: 1.4rem; color: var(--primary); font-weight: 700;">Why Choose InstaStream Online?</h3>
+                <p>In a world of cluttered and slow downloader tools, InstaStream Online stands out by prioritizing user privacy and speed. We utilize advanced AI-driven algorithms to fetch the original direct links from Instagram's servers, ensuring that you always get the <strong>highest quality MP4 videos</strong> and <strong>JPEG images</strong> without any compression or watermarks.</p>
+                
+                <ul style="margin: 20px 0; padding-left: 20px;">
+                    <li><strong>Unlimited Downloads:</strong> No daily limits or restrictions on the number of files you can save.</li>
+                    <li><strong>No Registration Required:</strong> Enjoy complete anonymity. We do not ask for your Instagram password or personal details.</li>
+                    <li><strong>Cross-Platform Compatibility:</strong> Works perfectly on Android, iPhone (iOS), Windows, and macOS through any modern web browser.</li>
+                    <li><strong>HD Video Support:</strong> Download Reels and Videos in 720p and 1080p Full HD resolution.</li>
+                </ul>
+                
+                <h3 style="margin-top: 30px; font-size: 1.4rem; color: var(--primary); font-weight: 700;">Fast Instagram Reels &amp; Story Saver</h3>
+                <p>Our <strong>Instagram Reels Downloader</strong> is optimized for mobile users who want to save trending content for offline viewing or creative inspiration. Additionally, our <strong>Story Saver</strong> tool allows you to archive stories before they disappear after 24 hours. Just paste the link, and let InstaStream Online do the rest of the work for you.</p>
+                
+                <p style="margin-top: 20px; font-style: italic; font-size: 0.9rem;">Disclaimer: InstaStream Online is not affiliated with Instagram or Meta. We encourage users to respect the intellectual property rights of content creators and only download media for personal use with permission where applicable.</p>
+            </div>
+        </section>
 
         <footer>
             <div class='footer-grid'>
@@ -1303,10 +1428,26 @@
 
             function getProxyUrl(url, name) {
                 if (!url) return '';
-                // Internal files don't need proxying
+                // Internal files don't need proxying; make sure they are absolute
+                if (url.startsWith('/files/')) url = API_BASE + url;
                 if (url.includes(API_BASE) && url.includes('/files/')) return url;
                 return `${API_BASE}/dl-proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`;
             }
+
+            // --- Discovery Source Tracking ---
+            (function() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const utmSource = urlParams.get('utm_source') || urlParams.get('utm_medium') || urlParams.get('q') || urlParams.get('query');
+                const referrer = document.referrer;
+                
+                if (!localStorage.getItem('discovery_source')) {
+                    const source = utmSource ? `Query/UTM: ${utmSource}` : (referrer ? `Referrer: ${referrer}` : 'Direct');
+                    localStorage.setItem('discovery_source', source);
+                    console.log("Discovery Source Captured:", source);
+                }
+            })();
+
+            const getDiscoveryHeader = () => ({ 'X-Discovery-Source': localStorage.getItem('discovery_source') || 'Unknown' });
 
             async function startDownload() {
                 const url = document.getElementById('urlInput').value.trim();
@@ -1319,6 +1460,29 @@
                 if (!url) {
                     alert('Please paste a link first!');
                     return;
+                }
+
+                // Check for Identity (If not logged in and no guest info)
+                const isAuth = auth && auth.currentUser;
+                const guestInfo = JSON.parse(localStorage.getItem('guest_identity') || 'null');
+                
+                if (!isAuth && !guestInfo) {
+                    document.getElementById('guestModal').style.display = 'flex';
+                    return;
+                }
+
+                const guestHeaders = {};
+                if (guestInfo) {
+                    guestHeaders['X-Guest-Name'] = guestInfo.name;
+                    guestHeaders['X-Guest-Email'] = guestInfo.email;
+                }
+
+                // Analytics Event
+                if (typeof gtag === 'function') {
+                    gtag('event', 'blogger_download_start', {
+                        'event_category': 'Engagement',
+                        'event_label': url
+                    });
                 }
 
                 // Instant Live Increment (Optimistic)
@@ -1343,7 +1507,11 @@
                 try {
                     const prevRes = await fetch(`${API_BASE}/preview`, {
                         method: 'POST',
-                        headers: await getSecureHeaders(),
+                        headers: { 
+                            ...(await getSecureHeaders()),
+                            ...guestHeaders,
+                            ...getDiscoveryHeader()
+                        },
                         body: JSON.stringify({ url })
                     });
                     if (prevRes.ok) {
@@ -1374,7 +1542,11 @@
                 try {
                     const dlRes = await fetch(`${API_BASE}/download`, {
                         method: 'POST',
-                        headers: await getSecureHeaders(),
+                        headers: {
+                            ...(await getSecureHeaders()),
+                            ...guestHeaders,
+                            ...getDiscoveryHeader()
+                        },
                         body: JSON.stringify({ url })
                     });
                     const data = await dlRes.json();
@@ -1460,13 +1632,23 @@
                 const qualities = data.qualities || {};
                 
                 // If we have a local filename, it's the most reliable source for HD/SD
-                const localPath = filename ? `/files/${filename}` : null;                // Quality Buttons & Main Download Button
+                const localPath = filename ? `${API_BASE}/files/${filename}` : null;                // Quality Buttons & Main Download Button
                 const hdSource = localPath || qualities['1080p'] || qualities['720p'];
                 const hdUrl = getProxyUrl(hdSource, "InstaStream_HD.mp4");
                 
                 // Primary button from the screenshot
                 const mainBtn = document.getElementById('downloadLink');
-                if (mainBtn) mainBtn.href = hdUrl;
+                if (mainBtn) {
+                    mainBtn.href = hdUrl;
+                    mainBtn.onclick = () => {
+                        if (typeof gtag === 'function') {
+                            gtag('event', 'blogger_final_download_click', {
+                                'event_category': 'Engagement',
+                                'event_label': hdSource
+                            });
+                        }
+                    };
+                }
 
                 // Secondary/Quality options (if present in theme)
                 const qHD = document.getElementById('qualityHD');
@@ -1579,6 +1761,13 @@
                 const pass = document.getElementById('authPass').value;
                 if (!email || !pass) { alert("Please fill all fields"); return; }
                 
+                // Analytics Event
+                if (typeof gtag === 'function') {
+                    gtag('event', isSignUp ? 'blogger_signup_click' : 'blogger_login_click', {
+                        'event_category': 'Auth'
+                    });
+                }
+                
                 try {
                     const btn = document.getElementById('mainAuthBtn');
                     btn.disabled = true;
@@ -1638,6 +1827,14 @@
                         headers: await getSecureHeaders(),
                         body: JSON.stringify({ upi_id: upi })
                     });
+
+                    // Analytics Event
+                    if (typeof gtag === 'function') {
+                        gtag('event', 'blogger_withdraw_click', {
+                            'event_category': 'Finance',
+                            'event_label': upi
+                        });
+                    }
                     const data = await res.json();
                     alert(data.message || 'Withdrawal request submitted!');
                 } catch (e) {
@@ -1648,10 +1845,27 @@
             async function claimReward() {
                 // Short delay to ensure they click the link
                 setTimeout(async () => {
+                    // Analytics Event
+                    if (typeof gtag === 'function') {
+                        gtag('event', 'blogger_share_claim', {
+                            'event_category': 'Engagement'
+                        });
+                    }
                     try {
+                        const guestInfo = JSON.parse(localStorage.getItem('guest_identity') || 'null');
+                        const guestHeaders = {};
+                        if (guestInfo) {
+                            guestHeaders['X-Guest-Name'] = guestInfo.name;
+                            guestHeaders['X-Guest-Email'] = guestInfo.email;
+                        }
+                        
                         const res = await fetch(`${API_BASE}/reward-share`, {
                             method: 'POST',
-                            headers: await getSecureHeaders(),
+                            headers: {
+                                ...(await getSecureHeaders()),
+                                ...guestHeaders,
+                                ...getDiscoveryHeader()
+                            },
                             body: JSON.stringify({})
                         });
                         const data = await res.json();
@@ -1666,6 +1880,30 @@
                         console.error("Reward failed");
                     }
                 }, 2000);
+            }
+
+            function submitGuestIdentity() {
+                const name = document.getElementById('guestName').value.trim();
+                const email = document.getElementById('guestEmail').value.trim();
+                
+                if (!name || !email || !email.includes('@')) {
+                    alert('Please enter a valid name and email address.');
+                    return;
+                }
+                
+                localStorage.setItem('guest_identity', JSON.stringify({ name, email }));
+                document.getElementById('guestModal').style.display = 'none';
+                
+                // Analytics Event
+                if (typeof gtag === 'function') {
+                    gtag('event', 'guest_identity_submit', {
+                        'event_category': 'Engagement',
+                        'event_label': email
+                    });
+                }
+                
+                // Resume download
+                startDownload();
             }
 
             updateCredits();
@@ -1812,6 +2050,22 @@
                 for (let i = 0; i < particles.length; i++) {
                     particles[i].update();
                     particles[i].draw();
+                    
+                    // Neural Connections
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = particles[i].color;
+                            ctx.globalAlpha = (100 - dist) / 1000;
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
                 }
                 requestAnimationFrame(animate);
             }

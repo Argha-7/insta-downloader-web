@@ -1,0 +1,88 @@
+[
+    {
+        "timestamp": "2026-03-19 17:39:22",
+        "type": "test_event",
+        "ip": "1.2.3.4",
+        "details": {
+            "test": "success",
+            "url": "https://instagram.com/reel/test"
+        }
+    },
+    {
+        "timestamp": "2026-03-19 17:42:00",
+        "type": "test_location_event",
+        "ip": "8.8.8.8",
+        "location": "Unknown Location",
+        "details": {
+            "test": "location_check"
+        }
+    },
+    {
+        "timestamp": "2026-03-19 17:42:26",
+        "type": "test_location_event",
+        "ip": "8.8.8.8",
+        "location": "Unknown Location",
+        "details": {
+            "test": "location_check"
+        }
+    },
+    {
+        "timestamp": "2026-03-19 17:43:08",
+        "type": "test_location_event",
+        "ip": "8.8.8.8",
+        "location": "Ashburn, Virginia, United States",
+        "details": {
+            "test": "location_check"
+        }
+    },
+    {
+        "timestamp": "2026-03-19 17:44:48",
+        "type": "preview_success",
+        "ip": "1.1.1.1",
+        "location": "South Brisbane, Queensland, Australia",
+        "details": {
+            "url": "https://www.instagram.com/reel/C123/",
+            "title": "Beauty of Nature",
+            "uploader": "nature_lover_99",
+            "interests": [
+                "nature",
+                "travel",
+                "beauty"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-03-19 17:46:30",
+        "type": "download_request",
+        "ip": "2.2.2.2",
+        "user_email": "testuser@gmail.com",
+        "user_name": "Test User Name",
+        "location": "New York, New York, United States",
+        "details": {
+            "url": "https://insta.com/p/abc"
+        }
+    },
+    {
+        "timestamp": "2026-03-19 17:48:19",
+        "type": "download_request",
+        "ip": "3.3.3.3",
+        "user_email": "rahul_guest@gmail.com",
+        "user_name": "Guest Rahul",
+        "location": "Ashburn, Virginia, United States",
+        "details": {
+            "url": "https://insta.com/p/xyz"
+        }
+    },
+    {
+        "timestamp": "2026-03-19 17:51:27",
+        "type": "preview_success",
+        "ip": "4.4.4.4",
+        "user_email": "Guest",
+        "user_name": "Anonymous",
+        "location": "Honolulu, Hawaii, United States",
+        "discovery_source": "Query/UTM: instagram downloader",
+        "details": {
+            "url": "https://insta.com/p/123"
+        }
+    }
+]

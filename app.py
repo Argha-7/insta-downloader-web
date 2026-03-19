@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import threading
 import yt_dlp
@@ -140,6 +141,86 @@ def increment_downloads():
     
     save_stats(current_inc + 1)
     return load_stats()["total_downloads"]
+
+ACTIVITY_FILE = 'activity.json'
+geo_cache = {}
+
+def get_location(ip):
+    """Fetches location data for an IP with simple in-memory caching."""
+    if ip in geo_cache:
+        return geo_cache[ip]
+    
+    # Skip geolocation for local IPs
+    if ip == "127.0.0.1" or ip.startswith("192.168."):
+        return "Local/Internal"
+        
+    try:
+        # Using ip-api.com (Free, no key required)
+        response = requests.get(f"http://ip-api.com/json/{ip}", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('status') == 'success':
+                location = f"{data.get('city', 'Unknown')}, {data.get('regionName', 'Unknown')}, {data.get('country', 'Unknown')}"
+                geo_cache[ip] = location
+                return location
+    except Exception as e:
+        print(f"GEO ERROR: {e}")
+    
+    return "Unknown Location"
+
+def log_activity(activity_type, details):
+    """Logs user activity to a persistent file with geolocation."""
+    try:
+        ip = get_client_ip()
+        user_email = "Guest"
+        user_name = "Anonymous"
+        
+        # Extract guest info from headers if available
+        guest_name = request.headers.get('X-Guest-Name')
+        guest_email = request.headers.get('X-Guest-Email')
+        
+        # Extract authenticated user info if available
+        if hasattr(request, 'fb_user'):
+            user_email = request.fb_user.get('email', 'Guest')
+            user_name = request.fb_user.get('name', 'Anonymous')
+        elif guest_email:
+            user_email = guest_email
+            user_name = guest_name or "Guest"
+            
+        # Extract discovery source (how they found the site)
+        discovery_source = request.headers.get('X-Discovery-Source', 'Unknown')
+        if discovery_source == 'Unknown' and request.referrer:
+            discovery_source = f"Referrer: {request.referrer}"
+            
+        activity = {
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'type': activity_type,
+            'ip': ip,
+            'user_email': user_email,
+            'user_name': user_name,
+            'location': get_location(ip),
+            'discovery_source': discovery_source,
+            'details': details
+        }
+        
+        logs = []
+        if os.path.exists(ACTIVITY_FILE):
+            with open(ACTIVITY_FILE, 'r') as f:
+                try:
+                    logs = json.load(f)
+                except:
+                    logs = []
+        
+        logs.append(activity)
+        
+        # Keep only the last 1000 logs to prevent file bloat
+        if len(logs) > 1000:
+            logs = logs[-1000:]
+            
+        with open(ACTIVITY_FILE, 'w') as f:
+            json.dump(logs, f, indent=4)
+    except Exception as e:
+        print(f"LOGGING ERROR: {e}")
 
 def get_client_ip():
     """Robust IP detection for proxy environments like HF."""
@@ -338,6 +419,8 @@ def download_video(url, existing_job_id=None):
                     'filename': os.path.basename(filename),
                     'title': info.get('title', 'Instagram Video'),
                     'thumbnail': info.get('thumbnail', ''),
+                    'uploader': info.get('uploader') or info.get('uploader_id'),
+                    'hashtags': info.get('tags') or re.findall(r'#(\w+)', info.get('description', '')),
                     'hd_url': hd_url,
                     'sd_url': sd_url
                 }
@@ -371,6 +454,8 @@ def process_video_task(url, job_id, user_key):
                 'filename': result.get('filename'),
                 'title': result.get('title', 'Instagram Video'),
                 'thumbnail': result.get('thumbnail', ''),
+                'uploader': result.get('uploader'),
+                'hashtags': result.get('hashtags'),
                 'video_url': result.get('hd_url') or result.get('sd_url'),
                 'qualities': {
                     '1080p': result.get('hd_url'),
@@ -424,6 +509,8 @@ def handle_download():
     thread = threading.Thread(target=process_video_task, args=(url, job_id, user_key))
     thread.daemon = True
     thread.start()
+
+    log_activity('download_request', {'url': url, 'device_id': data.get('device_id')})
 
     return jsonify({
         'success': True, 
@@ -550,6 +637,8 @@ def dl_proxy():
                 if chunk:
                     yield chunk
 
+        log_activity('file_download_proxy', {'url': url, 'name': name})
+
         return Response(stream_with_context(generate()), 
                         status=resp.status_code,
                         content_type=resp.headers.get('Content-Type', 'video/mp4'),
@@ -612,10 +701,21 @@ def get_preview():
                     sd_url = hd_url # Fallback if only one exists
             
             raw_thumb = info.get('thumbnail', '')
+            uploader = info.get('uploader') or info.get('uploader_id')
+            hashtags = info.get('tags') or re.findall(r'#(\w+)', info.get('description', ''))
             
+            log_activity('preview_success', {
+                'url': url, 
+                'title': info.get('title'),
+                'uploader': uploader,
+                'interests': hashtags[:10] # Top 10 hashtags
+            })
+
             return jsonify({
                 'success': True,
                 'title': info.get('title', 'Instagram Video'),
+                'uploader': uploader,
+                'hashtags': hashtags,
                 'thumbnail': raw_thumb,
                 'video_url': hd_url,
                 'qualities': {
@@ -668,10 +768,27 @@ def clear_cache():
 
 @app.route('/files/<path:filename>')
 def download_file(filename):
+    log_activity('file_download_direct', {'filename': filename})
     response = send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
     return response
+
+@app.route('/admin/activity')
+def admin_activity():
+    key = request.args.get('s')
+    if key != APP_SECRET:
+        return "Unauthorized", 401
+        
+    logs = []
+    if os.path.exists(ACTIVITY_FILE):
+        with open(ACTIVITY_FILE, 'r') as f:
+            try:
+                logs = json.load(f)
+            except:
+                logs = []
+    
+    return render_template('admin_activity.html', logs=logs)
 
 if __name__ == '__main__':
     # Local fallback for GH_REPO
