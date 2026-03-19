@@ -383,12 +383,14 @@ def trigger_github_action(video_url, job_id, workflow="download.yml"):
         "Accept": "application/vnd.github.v3+json",
     }
     # Current Space URL for callback (Enforce lowercase for HF compatibility)
-    space_name = os.environ.get('SPACE_ID', '')
-    if space_name:
-        callback_url = f"https://{space_name.replace('/', '-')}.hf.space/github-callback?job_id={job_id}".lower()
+    # Host identification
+    space_id = os.environ.get('SPACE_ID', '')
+    if space_id:
+        host = space_id.replace('/', '-').lower()
+        callback_url = f"https://{host}.hf.space/github-callback?job_id={job_id}"
     else:
         # Fallback for local testing (won't work for callback but for trigger)
-        callback_url = ""
+        callback_url = f"{request.url_root.rstrip('/')}/github-callback?job_id={job_id}"
 
     payload = {
         "ref": "main",
@@ -469,7 +471,7 @@ def download_video(url, workflow_to_use="download.yml"):
         
         if trigger_github_action(url, job_id, workflow=workflow_to_use):
             increment_downloads() # Count as an attempt/task started
-            print(f"DEBUG: Triggered GitHub fallback for {url}")
+            print(f"DEBUG: Triggered GitHub Action {workflow_to_use} for {url} (Job: {job_id})")
             return "PENDING_GITHUB", job_id
         
         save_job(job_id, {'status': 'failed', 'message': f'Error: {err_str[:100]}'})
@@ -786,11 +788,23 @@ def github_callback():
     job = get_job(job_id)
     
     # Debug Logging to activity.json
-    log_activity('github_callback_receive', {'job_id': job_id, 'found': bool(job)})
+    log_activity('github_callback_receive', {
+        'job_id': job_id, 
+        'found': bool(job),
+        'files': list(request.files.keys()),
+        'form': list(request.form.keys())
+    })
     
-    if not job_id or not job:
-        print(f"CALLBACK FAILED: Job {job_id} not found.")
-        return "Invalid Job ID", 400
+    if not job_id:
+        print("CALLBACK ERROR: No job_id provided.")
+        return "No job_id", 400
+        
+    if not job:
+        print(f"CALLBACK FAILED: Job {job_id} not found in persistent jobs.json.")
+        # Check lowercase version just in case
+        job = get_job(job_id.lower())
+        if not job:
+            return f"Job {job_id} not found", 404
     
     file = request.files.get('file')
     filename = None

@@ -30,8 +30,8 @@ jobs:
         id: dl
         run: |
           mkdir -p output
-          # Use a clean filename for the callback
-          python -m yt_dlp "${{ github.event.inputs.video_url }}" -o "output/video.%(ext)s"
+          # Use yt-dlp to download (with verbose logging and better settings for IG)
+          python -m yt_dlp -v "${{ github.event.inputs.video_url }}" -f "b[ext=mp4]/b" -o "output/video.%(ext)s" --no-playlist --socket-timeout 60 --nocheckcertificate
           # Find the actual filename (e.g., video.mp4)
           REAL_PATH=$(ls output/video.* | head -n 1)
           echo "file_path=$REAL_PATH" >> $GITHUB_OUTPUT
@@ -39,10 +39,13 @@ jobs:
       - name: Send to Callback
         if: ${{ github.event.inputs.callback_url != '' }}
         run: |
-          # Get direct URL
-          DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g || echo "")
-          # Send both file (backup) and direct URL (fast)
-          curl -X POST -F "file=@${{ steps.dl.outputs.file_path }}" -F "direct_url=$DIRECT_URL" "${{ github.event.inputs.callback_url }}"
+          # Get direct URL (handle potential empty output) - force IPv4 to avoid some blocks
+          DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g --force-ipv4 --no-playlist || echo "")
+          # Send both file (backup) and direct URL (fast) with proper quoting
+          curl -v -X POST \
+            -F "file=@${{ steps.dl.outputs.file_path }}" \
+            -F "direct_url=${DIRECT_URL}" \
+            "${{ github.event.inputs.callback_url }}"
 
       - name: Upload Artifact (Backup)
         uses: actions/upload-artifact@v7
