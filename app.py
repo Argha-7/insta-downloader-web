@@ -380,7 +380,7 @@ def trigger_github_action(video_url, job_id, workflow="download.yml"):
         print(f"GitHub Trigger Exception: {e}")
         return False
 
-def download_video(url, existing_job_id=None):
+def download_video(url, workflow_to_use="download.yml"):
     """Main download logic with local-first, then GitHub failover."""
     if '?' in url:
         url = url.split('?')[0]
@@ -429,12 +429,8 @@ def download_video(url, existing_job_id=None):
         print(f"LOCAL DOWNLOAD FAILED: {err_str}")
         
         # 2. Trigger GitHub Actions if blocked or extraction fails
-        # Broadening to trigger on almost any error to ensure reliability
         job_id = str(uuid.uuid4())
         job_status[job_id] = {'status': 'pending', 'filename': None, 'timestamp': time.time()}
-        
-        # Determine which workflow to use (App vs Website)
-        workflow_to_use = "app_download.yml" if request.path == '/share_target' or (request.referrer and '/app' in request.referrer) else "download.yml"
         
         if trigger_github_action(url, job_id, workflow=workflow_to_use):
             increment_downloads() # Count as an attempt/task started
@@ -443,11 +439,11 @@ def download_video(url, existing_job_id=None):
         
         return "FAILED", f"Error: {err_str[:100]}"
 
-def process_video_task(url, job_id, user_key):
+def process_video_task(url, job_id, user_key, workflow_to_use):
     """Background task to process video and update job_status."""
     try:
-        # Pass job_id to maintain consistency
-        status, result = download_video(url, existing_job_id=job_id)
+        # Pass workflow_to_use to maintain consistency
+        status, result = download_video(url, workflow_to_use=workflow_to_use)
         if status == "SUCCESS":
             job_status[job_id] = {
                 'status': 'ready', 
@@ -506,7 +502,10 @@ def handle_download():
     job_id = str(uuid.uuid4())
     job_status[job_id] = {'status': 'pending', 'timestamp': time.time()}
     
-    thread = threading.Thread(target=process_video_task, args=(url, job_id, user_key))
+    # Determine which workflow to use (App vs Website) BEFORE starting thread
+    workflow_to_use = "app_download.yml" if request.path == '/share_target' or (request.referrer and '/app' in request.referrer) else "download.yml"
+    
+    thread = threading.Thread(target=process_video_task, args=(url, job_id, user_key, workflow_to_use))
     thread.daemon = True
     thread.start()
 
@@ -726,7 +725,7 @@ def get_preview():
             })
     except Exception as e:
         print(f"PREVIEW ERROR: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': False, 'message': str(e)}), 200
 
 @app.route('/status/<job_id>')
 def check_status(job_id):
