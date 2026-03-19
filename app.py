@@ -760,8 +760,16 @@ def get_preview():
                 }
             })
     except Exception as e:
-        print(f"PREVIEW ERROR: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 200
+        print(f"PREVIEW ERROR (Fallback to Placeholder): {e}")
+        # Return a partial success so the UI doesn't break, allowing the download to proceed
+        return jsonify({
+            'success': True,
+            'title': 'Instagram Video (Processing...)',
+            'uploader': 'User',
+            'hashtags': [],
+            'thumbnail': 'https://static.cdninstagram.com/rsrc.php/v3/yI/r/VsNE-OHk_8a.png', # Generic IG icon
+            'is_fallback': True
+        }), 200
 
 @app.route('/status/<job_id>')
 def check_status(job_id):

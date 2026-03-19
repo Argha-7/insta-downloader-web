@@ -1464,6 +1464,11 @@
                 progressBar.style.width = '10%';
                 statusText.innerText = 'Connecting to server...';
                 
+                // --- Show Placeholders Immediately ---
+                document.getElementById('progThumb').src = 'https://static.cdninstagram.com/rsrc.php/v3/yI/r/VsNE-OHk_8a.png';
+                document.getElementById('progTitle').innerText = 'Detecting Video Details...';
+                progressUI.style.display = 'flex';
+                
                 // --- Auto Scroll to Progress ---
                 progressUI.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -1542,7 +1547,7 @@
 
                 const interval = setInterval(async () => {
                     count++;
-                    if (count > 60) { clearInterval(interval); showError('Process Timeout.'); return; }
+                    if (count > 150) { clearInterval(interval); showError('Process Timeout. Slow Server? Try again in 1 min.'); return; }
 
                     try {
                         const res = await fetch(`${API_BASE}/status/${jobId}`);
