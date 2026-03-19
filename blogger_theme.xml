@@ -1177,28 +1177,6 @@
             </div>
         </div>
 
-        <!-- Identity Modal for Guests -->
-        <div class="modal" id="guestModal" style="display:none; z-index:10001; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);">
-            <div class="modal-content" style="max-width:400px; padding:40px; border-radius:30px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:white;">
-                <i class="fas fa-id-card" style="font-size:3.5rem; color:var(--primary); margin-bottom:20px; text-shadow:0 0 20px rgba(59,130,246,0.5);"></i>
-                <h2 style="font-size:1.8rem; margin-bottom:10px;">Quick Verification</h2>
-                <p style="color:#94a3b8; margin-bottom:30px; font-size:0.95rem;">Please enter your name and email to continue with the high-speed download.</p>
-                
-                <div style="text-align:left; margin-bottom:20px;">
-                    <label style="font-size:0.8rem; color:#64748b; margin-left:5px; margin-bottom:5px; display:block;">Full Name</label>
-                    <input id="guestName" placeholder="e.g. Rahul Sharma" style="width:100%; padding:15px; border-radius:15px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:white; outline:none;" type="text"/>
-                </div>
-                
-                <div style="text-align:left; margin-bottom:30px;">
-                    <label style="font-size:0.8rem; color:#64748b; margin-left:5px; margin-bottom:5px; display:block;">Gmail Address</label>
-                    <input id="guestEmail" placeholder="e.g. rahul@gmail.com" style="width:100%; padding:15px; border-radius:15px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:white; outline:none;" type="email"/>
-                </div>
-                
-                <button class="btn-started" onclick="submitGuestIdentity()" style="width:100%; padding:18px; font-weight:700; font-size:1rem; letter-spacing:1px; box-shadow:0 10px 20px rgba(59,130,246,0.3);">Continue to Download</button>
-                <p style="margin-top:20px; font-size:0.75rem; color:#475569;">We use this to prevent bot abuse and improve your experience.</p>
-            </div>
-        </div>
-
         <!-- Bottom Ad Slot -->
         <div class='ad-slot' id='footerAd'>
             <script type="text/javascript">
@@ -1462,20 +1440,7 @@
                     return;
                 }
 
-                // Check for Identity (If not logged in and no guest info)
-                const isAuth = auth && auth.currentUser;
-                const guestInfo = JSON.parse(localStorage.getItem('guest_identity') || 'null');
-                
-                if (!isAuth && !guestInfo) {
-                    document.getElementById('guestModal').style.display = 'flex';
-                    return;
-                }
-
                 const guestHeaders = {};
-                if (guestInfo) {
-                    guestHeaders['X-Guest-Name'] = guestInfo.name;
-                    guestHeaders['X-Guest-Email'] = guestInfo.email;
-                }
 
                 // Analytics Event
                 if (typeof gtag === 'function') {
@@ -1852,12 +1817,7 @@
                         });
                     }
                     try {
-                        const guestInfo = JSON.parse(localStorage.getItem('guest_identity') || 'null');
                         const guestHeaders = {};
-                        if (guestInfo) {
-                            guestHeaders['X-Guest-Name'] = guestInfo.name;
-                            guestHeaders['X-Guest-Email'] = guestInfo.email;
-                        }
                         
                         const res = await fetch(`${API_BASE}/reward-share`, {
                             method: 'POST',
@@ -1880,30 +1840,6 @@
                         console.error("Reward failed");
                     }
                 }, 2000);
-            }
-
-            function submitGuestIdentity() {
-                const name = document.getElementById('guestName').value.trim();
-                const email = document.getElementById('guestEmail').value.trim();
-                
-                if (!name || !email || !email.includes('@')) {
-                    alert('Please enter a valid name and email address.');
-                    return;
-                }
-                
-                localStorage.setItem('guest_identity', JSON.stringify({ name, email }));
-                document.getElementById('guestModal').style.display = 'none';
-                
-                // Analytics Event
-                if (typeof gtag === 'function') {
-                    gtag('event', 'guest_identity_submit', {
-                        'event_category': 'Engagement',
-                        'event_label': email
-                    });
-                }
-                
-                // Resume download
-                startDownload();
             }
 
             updateCredits();
