@@ -34,6 +34,12 @@ ALLOWED_ORIGINS = [
 ]
 APP_SECRET = "insta_pro_ai_secure_99" 
 
+def get_client_ip():
+    """Robust IP detection for proxy environments like HF."""
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return request.remote_addr or "127.0.0.1"
+
 def verify_request():
     """Verify that the request comes from our site and has the secret or a valid Firebase token."""
     secret = request.headers.get('X-App-Secret')
