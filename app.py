@@ -7,8 +7,10 @@ import requests
 import uuid
 import json
 import firebase_admin
-from firebase_admin import credentials, auth, firestore
+from firebase_admin import credentials, auth
 import urllib.parse
+from huggingface_hub import CommitScheduler
+from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -73,19 +75,48 @@ def verify_request():
     print(f"CRITICAL: verify_request FAILED - Referer: {referer}, Origin: {origin}, All Headers: {dict(request.headers)}")
     return False
 
-# Firebase Initialization
+# Persistent Storage Configuration (JSON files)
+# We use a /data folder if it exists (HF Persistent Storage), otherwise we use root
+DATA_DIR = Path("data") if os.path.exists("data") else Path(".")
+ACTIVITY_FILE = DATA_DIR / 'activity.json'
+STATS_FILE = DATA_DIR / 'stats.json'
+JOBS_FILE = DATA_DIR / 'jobs.json'
+
+# ensure the data directory exists
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# Hugging Face Hub Persistence (Commit logs to a Dataset every 5 mins)
+scheduler = None
+hf_token = os.environ.get('HF_TOKEN')
+dataset_id = os.environ.get('DATASET_ID', 'Argha-7/insta-downloader-logs')
+
+if hf_token:
+    try:
+        scheduler = CommitScheduler(
+            repo_id=dataset_id,
+            repo_type="dataset",
+            folder_path=DATA_DIR,
+            path_in_repo="logs",
+            every=5,
+            token=hf_token
+        )
+        print(f"HF Hub Persistence ACTIVE: Syncing to {dataset_id}")
+    except Exception as e:
+        print(f"HF HUB SYNC ERROR: {e}")
+else:
+    print("WARNING: HF_TOKEN not set. Persistence will be local-only (wiped on restart).")
+
+# Firebase Initialization (Auth Only)
 firebase_app = None
-db = None
 try:
     fb_creds_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
     if fb_creds_json:
         creds_dict = json.loads(fb_creds_json)
         cred = credentials.Certificate(creds_dict)
         firebase_app = firebase_admin.initialize_app(cred)
-        db = firestore.client()
-        print("Firebase Admin SDK and Firestore initialized successfully.")
+        print("Firebase Admin SDK (Auth only) initialized successfully.")
     else:
-        print("WARNING: FIREBASE_SERVICE_ACCOUNT not set. Firebase features will be disabled.")
+        print("WARNING: FIREBASE_SERVICE_ACCOUNT not set. Auth will be disabled.")
 except Exception as e:
     print(f"ERROR: Failed to initialize Firebase: {e}")
 
@@ -121,50 +152,26 @@ def load_stats():
     base_count = 1540 + int(seconds_since_start / 1800)
     
     current_inc = 0
-    if db:
+    if os.path.exists(STATS_FILE):
         try:
-            doc = db.collection('stats').document('downloads').get()
-            if doc.exists:
-                current_inc = doc.to_dict().get('increment', 0)
-        except Exception as e:
-            print(f"STATS LOAD ERROR: {e}")
-    else:
-        # Fallback to local file if Firestore is not available
-        if os.path.exists(STATS_FILE):
-            try:
-                with open(STATS_FILE, 'r') as f:
-                    data = json.load(f)
-                    current_inc = data.get("increment", 0)
-            except: pass
+            with open(STATS_FILE, 'r') as f:
+                data = json.load(f)
+                current_inc = data.get("increment", 0)
+        except: pass
     
     return {"total_downloads": base_count + current_inc}
 
 def save_stats(increment):
-    if db:
-        try:
-            db.collection('stats').document('downloads').set({"increment": increment})
-            return
-        except Exception as e:
-            print(f"STATS SAVE ERROR: {e}")
-            
-    with open(STATS_FILE, 'w') as f:
-        json.dump({"increment": increment}, f)
+    if scheduler:
+        with scheduler.lock:
+            with open(STATS_FILE, 'w') as f:
+                json.dump({"increment": increment}, f)
+    else:
+        with open(STATS_FILE, 'w') as f:
+            json.dump({"increment": increment}, f)
 
 def increment_downloads():
     current_inc = 0
-    if db:
-        try:
-            doc_ref = db.collection('stats').document('downloads')
-            doc = doc_ref.get()
-            if doc.exists:
-                current_inc = doc.to_dict().get('increment', 0)
-            current_inc += 1
-            doc_ref.set({"increment": current_inc})
-            return load_stats()["total_downloads"]
-        except Exception as e:
-            print(f"STATS INC ERROR: {e}")
-
-    # Fallback logic
     if os.path.exists(STATS_FILE):
         try:
             with open(STATS_FILE, 'r') as f:
@@ -233,37 +240,32 @@ def log_activity(activity_type, details):
             'user_name': user_name,
             'location': get_location(ip),
             'discovery_source': discovery_source,
-            'details': details,
-            'created_at': firestore.SERVER_TIMESTAMP
+            'details': details
         }
         
-        if db:
-            db.collection('activity_logs').add(activity)
-            return
-
-        # Fallback to local file logging
+        # Local file logging with scheduler lock
         logs = []
         if os.path.exists(ACTIVITY_FILE):
-            with open(ACTIVITY_FILE, 'r') as f:
-                try: logs = json.load(f)
-                except: logs = []
+            try:
+                with open(ACTIVITY_FILE, 'r') as f:
+                    logs = json.load(f)
+            except: logs = []
         
         logs.append(activity)
         if len(logs) > 1000: logs = logs[-1000:]
             
-        with open(ACTIVITY_FILE, 'w') as f:
-            json.dump(logs, f, indent=4)
+        if scheduler:
+            with scheduler.lock:
+                with open(ACTIVITY_FILE, 'w') as f:
+                    json.dump(logs, f, indent=4)
+        else:
+            with open(ACTIVITY_FILE, 'w') as f:
+                json.dump(logs, f, indent=4)
     except Exception as e:
         print(f"LOGGING ERROR: {e}")
 
 def serialize_firestore_data(data):
-    """Converts Firestore datetime objects to strings for JSON serialization."""
-    if isinstance(data, dict):
-        return {k: serialize_firestore_data(v) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [serialize_firestore_data(v) for v in data]
-    elif hasattr(data, 'isoformat'): # Handles datetime and Timestamp objects
-        return data.isoformat()
+    """(Kept for compatibility, though Firestore is removed)"""
     return data
 
 def generate_ref_id():
@@ -342,13 +344,6 @@ def load_jobs():
     return {}
 
 def save_job(job_id, data):
-    if db:
-        try:
-            db.collection('jobs').document(job_id).set(data, merge=True)
-            return
-        except Exception as e:
-            print(f"JOB SAVE ERROR: {e}")
-
     with data_lock:
         jobs = load_jobs()
         if job_id in jobs: jobs[job_id].update(data)
@@ -356,17 +351,16 @@ def save_job(job_id, data):
         if len(jobs) > 100:
             sorted_jobs = sorted(jobs.items(), key=lambda x: x[1].get('timestamp', 0), reverse=True)
             jobs = dict(sorted_jobs[:100])
-        with open(JOBS_FILE, 'w') as f:
-            json.dump(jobs, f, indent=4)
+        
+        if scheduler:
+            with scheduler.lock:
+                with open(JOBS_FILE, 'w') as f:
+                    json.dump(jobs, f, indent=4)
+        else:
+            with open(JOBS_FILE, 'w') as f:
+                json.dump(jobs, f, indent=4)
 
 def get_job(job_id):
-    if db:
-        try:
-            doc = db.collection('jobs').document(job_id).get()
-            if doc.exists: return doc.to_dict()
-        except Exception as e:
-            print(f"JOB GET ERROR: {e}")
-            
     jobs = load_jobs()
     return jobs.get(job_id)
 
@@ -923,18 +917,7 @@ def admin_activity():
         return "Unauthorized", 401
         
     logs = []
-    if db:
-        try:
-            # Fetch latest 100 logs
-            docs = db.collection('activity_logs').order_by('created_at', direction=firestore.Query.DESCENDING).limit(100).stream()
-            for doc in docs:
-                log_data = doc.to_dict()
-                # Ensure all data is JSON serializable for the template
-                logs.append(serialize_firestore_data(log_data))
-        except Exception as e:
-            print(f"ADMIN LOGS ERROR: {e}")
-            
-    if not logs and os.path.exists(ACTIVITY_FILE):
+    if os.path.exists(ACTIVITY_FILE):
         with open(ACTIVITY_FILE, 'r') as f:
             try: logs = json.load(f)
             except: logs = []
