@@ -7,3 +7,4 @@ flask-limiter
 requests
 firebase-admin
 gunicorn
+google-cloud-firestore

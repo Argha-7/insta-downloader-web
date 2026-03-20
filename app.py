@@ -7,7 +7,7 @@ import requests
 import uuid
 import json
 import firebase_admin
-from firebase_admin import credentials, auth
+from firebase_admin import credentials, auth, firestore
 import urllib.parse
 from flask import Flask, render_template, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
@@ -75,15 +75,17 @@ def verify_request():
 
 # Firebase Initialization
 firebase_app = None
+db = None
 try:
     fb_creds_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
     if fb_creds_json:
         creds_dict = json.loads(fb_creds_json)
         cred = credentials.Certificate(creds_dict)
         firebase_app = firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK initialized successfully.")
+        db = firestore.client()
+        print("Firebase Admin SDK and Firestore initialized successfully.")
     else:
-        print("WARNING: FIREBASE_SERVICE_ACCOUNT not set. Auth will be disabled.")
+        print("WARNING: FIREBASE_SERVICE_ACCOUNT not set. Firebase features will be disabled.")
 except Exception as e:
     print(f"ERROR: Failed to initialize Firebase: {e}")
 
@@ -114,36 +116,61 @@ STATS_FILE = 'stats.json'
 START_EPOCH = 1740787200  # March 1, 2026
 
 def load_stats():
-    # Base calculation: 1540 + ~50 downloads per day since March 1st
-    # Growing smoothly every 5 minutes
+    # Base calculation
     seconds_since_start = time.time() - START_EPOCH
-    base_count = 1540 + int(seconds_since_start / 1800) # +1 every 30 mins
+    base_count = 1540 + int(seconds_since_start / 1800)
     
     current_inc = 0
-    if os.path.exists(STATS_FILE):
+    if db:
         try:
-            with open(STATS_FILE, 'r') as f:
-                data = json.load(f)
-                current_inc = data.get("increment", 0)
-        except:
-            pass
+            doc = db.collection('stats').document('downloads').get()
+            if doc.exists:
+                current_inc = doc.to_dict().get('increment', 0)
+        except Exception as e:
+            print(f"STATS LOAD ERROR: {e}")
+    else:
+        # Fallback to local file if Firestore is not available
+        if os.path.exists(STATS_FILE):
+            try:
+                with open(STATS_FILE, 'r') as f:
+                    data = json.load(f)
+                    current_inc = data.get("increment", 0)
+            except: pass
     
     return {"total_downloads": base_count + current_inc}
 
 def save_stats(increment):
+    if db:
+        try:
+            db.collection('stats').document('downloads').set({"increment": increment})
+            return
+        except Exception as e:
+            print(f"STATS SAVE ERROR: {e}")
+            
     with open(STATS_FILE, 'w') as f:
         json.dump({"increment": increment}, f)
 
 def increment_downloads():
-    # Get current increment
     current_inc = 0
+    if db:
+        try:
+            doc_ref = db.collection('stats').document('downloads')
+            doc = doc_ref.get()
+            if doc.exists:
+                current_inc = doc.to_dict().get('increment', 0)
+            current_inc += 1
+            doc_ref.set({"increment": current_inc})
+            return load_stats()["total_downloads"]
+        except Exception as e:
+            print(f"STATS INC ERROR: {e}")
+
+    # Fallback logic
     if os.path.exists(STATS_FILE):
         try:
             with open(STATS_FILE, 'r') as f:
                 data = json.load(f)
                 current_inc = data.get("increment", 0)
-        except:
-            pass
+        except: pass
     
     save_stats(current_inc + 1)
     return load_stats()["total_downloads"]
@@ -206,22 +233,23 @@ def log_activity(activity_type, details):
             'user_name': user_name,
             'location': get_location(ip),
             'discovery_source': discovery_source,
-            'details': details
+            'details': details,
+            'created_at': firestore.SERVER_TIMESTAMP
         }
         
+        if db:
+            db.collection('activity_logs').add(activity)
+            return
+
+        # Fallback to local file logging
         logs = []
         if os.path.exists(ACTIVITY_FILE):
             with open(ACTIVITY_FILE, 'r') as f:
-                try:
-                    logs = json.load(f)
-                except:
-                    logs = []
+                try: logs = json.load(f)
+                except: logs = []
         
         logs.append(activity)
-        
-        # Keep only the last 1000 logs to prevent file bloat
-        if len(logs) > 1000:
-            logs = logs[-1000:]
+        if len(logs) > 1000: logs = logs[-1000:]
             
         with open(ACTIVITY_FILE, 'w') as f:
             json.dump(logs, f, indent=4)
@@ -295,32 +323,40 @@ def get_user_data(ip, gift=None, device_id=None):
 JOBS_FILE = 'jobs.json'
 
 def load_jobs():
+    # Only use for local fallback
     if os.path.exists(JOBS_FILE):
         try:
             with open(JOBS_FILE, 'r') as f:
                 return json.load(f)
-        except:
-            return {}
+        except: return {}
     return {}
 
 def save_job(job_id, data):
+    if db:
+        try:
+            db.collection('jobs').document(job_id).set(data, merge=True)
+            return
+        except Exception as e:
+            print(f"JOB SAVE ERROR: {e}")
+
     with data_lock:
         jobs = load_jobs()
-        if job_id in jobs:
-            jobs[job_id].update(data)
-        else:
-            jobs[job_id] = data
-        
-        # Simple cleanup: Keep only last 100 jobs
+        if job_id in jobs: jobs[job_id].update(data)
+        else: jobs[job_id] = data
         if len(jobs) > 100:
-            # Sort by timestamp and keep latest
             sorted_jobs = sorted(jobs.items(), key=lambda x: x[1].get('timestamp', 0), reverse=True)
             jobs = dict(sorted_jobs[:100])
-
         with open(JOBS_FILE, 'w') as f:
             json.dump(jobs, f, indent=4)
 
 def get_job(job_id):
+    if db:
+        try:
+            doc = db.collection('jobs').document(job_id).get()
+            if doc.exists: return doc.to_dict()
+        except Exception as e:
+            print(f"JOB GET ERROR: {e}")
+            
     jobs = load_jobs()
     return jobs.get(job_id)
 
@@ -877,15 +913,20 @@ def admin_activity():
         return "Unauthorized", 401
         
     logs = []
-    if os.path.exists(ACTIVITY_FILE):
+    if db:
+        try:
+            docs = db.collection('activity_logs').order_by('created_at', direction=firestore.Query.DESCENDING).limit(100).stream()
+            for doc in docs:
+                logs.append(doc.to_dict())
+        except Exception as e:
+            print(f"ADMIN LOGS ERROR: {e}")
+            
+    if not logs and os.path.exists(ACTIVITY_FILE):
         with open(ACTIVITY_FILE, 'r') as f:
-            try:
-                logs = json.load(f)
-            except:
-                logs = []
+            try: logs = json.load(f)
+            except: logs = []
     
     response = make_response(render_template('admin_activity.html', logs=logs))
-    # Allow embedding in iFrames (needed for Blogger Page integration)
     response.headers['X-Frame-Options'] = 'ALLOWALL' 
     response.headers['Content-Security-Policy'] = "frame-ancestors *"
     return response
