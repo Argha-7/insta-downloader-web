@@ -222,12 +222,6 @@ def log_activity(activity_type, details):
     except Exception as e:
         print(f"LOGGING ERROR: {e}")
 
-def get_client_ip():
-    """Robust IP detection for proxy environments like HF."""
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    return request.remote_addr or "127.0.0.1"
-
 def generate_ref_id():
     return str(uuid.uuid4())[:8]
 def get_user_data(ip, gift=None, device_id=None):
