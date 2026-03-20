@@ -261,6 +261,7 @@
                 <h4>Top Countries</h4>
                 <div style="flex:1; position:relative;">
                     <canvas id="countryChart"></canvas>
+                    <div id="countryNoData" style="display:none; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-dim);">No data available</div>
                 </div>
             </div>
             <div class="chart-card">
@@ -385,10 +386,15 @@
         });
 
         function showNoData() {
-            const noDataElem = document.getElementById('activityNoData');
-            const chartElem = document.getElementById('activityChart');
-            if (noDataElem) noDataElem.style.display = 'flex';
-            if (chartElem) chartElem.style.display = 'none';
+            const countryNoData = document.getElementById('countryNoData');
+            const activityNoData = document.getElementById('activityNoData');
+            const countryChart = document.getElementById('countryChart');
+            const activityChart = document.getElementById('activityChart');
+            
+            if (countryNoData) countryNoData.style.display = 'flex';
+            if (activityNoData) activityNoData.style.display = 'flex';
+            if (countryChart) countryChart.style.display = 'none';
+            if (activityChart) activityChart.style.display = 'none';
         }
 
         function renderCharts(logs) {
