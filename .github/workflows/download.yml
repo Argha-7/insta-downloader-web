@@ -42,7 +42,7 @@ jobs:
           # Get direct URL (handle potential empty output) - force IPv4 to avoid some blocks
           DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g --force-ipv4 --no-playlist || echo "")
           # Send both file (backup) and direct URL (fast) with proper quoting
-          curl -v -X POST \
+          curl -v -X POST --retry 3 \
             -F "file=@${{ steps.dl.outputs.file_path }}" \
             -F "direct_url=${DIRECT_URL}" \
             "${{ github.event.inputs.callback_url }}"

@@ -1565,7 +1565,7 @@
                             progressBar.style.width = `${50 + (count * 0.7)}%`;
                         }
                     } catch (e) {}
-                }, 5000);
+                }, 8000);
             }
 
             function showSuccess(data) {

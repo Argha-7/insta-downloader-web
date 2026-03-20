@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 @app.route('/debug/version')
 def debug_version():
-    return jsonify({"version": "v31-job-sync-fix", "time": time.time()})
+    return jsonify({"version": "v32-resilience-fix", "time": time.time()})
 # Global lock for user_credits to prevent race conditions
 data_lock = threading.Lock()
 # Simplified CORS for debugging - allows all origins and headers temporarily
@@ -83,9 +83,9 @@ except Exception as e:
 
 # Rate Limiter setup (Prevents abuse)
 limiter = Limiter(
-    get_remote_address,
+    get_client_ip,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["2000 per day", "500 per hour"],
     storage_uri="memory://",
 )
 
@@ -780,6 +780,7 @@ def get_preview():
         }), 200
 
 @app.route('/status/<job_id>')
+@limiter.exempt
 def check_status(job_id):
     """Blogger polls this to see if GitHub or Local is done."""
     status = get_job(job_id)
@@ -788,6 +789,7 @@ def check_status(job_id):
     return jsonify(status)
 
 @app.route('/github-callback', methods=['POST'])
+@limiter.exempt
 def github_callback():
     """GitHub Action POSTs the file here."""
     job_id = request.args.get('job_id')
