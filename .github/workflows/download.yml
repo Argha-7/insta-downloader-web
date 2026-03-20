@@ -31,7 +31,7 @@ jobs:
         run: |
           mkdir -p output
           # Use yt-dlp to download (with verbose logging and better settings for IG)
-          python -m yt_dlp -v "${{ github.event.inputs.video_url }}" -f "b[ext=mp4]/b" -o "output/video.%(ext)s" --no-playlist --socket-timeout 60 --nocheckcertificate
+          python -m yt_dlp -v "${{ github.event.inputs.video_url }}" -f "b[ext=mp4]/b" -o "output/video.%(ext)s" --no-playlist --socket-timeout 60 --no-check-certificate
           # Find the actual filename (e.g., video.mp4)
           REAL_PATH=$(ls output/video.* | head -n 1)
           echo "file_path=$REAL_PATH" >> $GITHUB_OUTPUT
