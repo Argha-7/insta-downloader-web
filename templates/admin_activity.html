@@ -234,8 +234,13 @@
             </div>
         </header>
 
-        <!-- Hidden Data Storage -->
-        <div id="logsDataStore" style="display:none;" data-logs='{{ logs|tojson|safe }}'></div>
+        <!-- Hidden Data Storage (using double quotes and proper escaping) -->
+        <div id="logsDataStore" style="display:none;" data-logs="{{ logs|tojson|forceescape }}"></div>
+
+        <!-- Debug Info Panel (Hidden by default, visible on error) -->
+        <div id="debugPanel" style="display:none; background:rgba(239, 68, 68, 0.1); border:1px solid #ef4444; color:#ef4444; padding:15px; border-radius:12px; margin-bottom:20px; font-family:monospace; font-size:0.8rem;">
+            <strong>Dashboard Error:</strong> <span id="debugMessage"></span>
+        </div>
 
         <div class="stats-grid">
             <div class="stat-card">
@@ -349,12 +354,24 @@
         // --- Dashboard Initialization ---
         document.addEventListener('DOMContentLoaded', function() {
             let logs = [];
+            const debugPanel = document.getElementById('debugPanel');
+            const debugMessage = document.getElementById('debugMessage');
+
             try {
                 const store = document.getElementById('logsDataStore');
-                const rawData = store ? store.getAttribute('data-logs') : '[]';
+                if (!store) throw new Error("Data store element missing");
+                
+                const rawData = store.getAttribute('data-logs');
+                if (!rawData) throw new Error("No data found in store");
+                
                 logs = JSON.parse(rawData);
+                console.log("Dashboard logs loaded:", logs.length);
             } catch (err) {
                 console.error("DATA PARSE ERROR:", err);
+                if (debugPanel && debugMessage) {
+                    debugPanel.style.display = 'block';
+                    debugMessage.innerText = "Data Error: " + err.message;
+                }
                 logs = [];
             }
 
