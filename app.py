@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 @app.route('/debug/version')
 def debug_version():
-    return jsonify({"version": "v29-final-stability", "time": time.time()})
+    return jsonify({"version": "v31-job-sync-fix", "time": time.time()})
 # Global lock for user_credits to prevent race conditions
 data_lock = threading.Lock()
 # Simplified CORS for debugging - allows all origins and headers temporarily
@@ -412,7 +412,7 @@ def trigger_github_action(video_url, job_id, workflow="download.yml"):
         print(f"GitHub Trigger Exception: {e}")
         return False
 
-def download_video(url, workflow_to_use="download.yml"):
+def download_video(url, workflow_to_use="download.yml", existing_job_id=None):
     """Main download logic with local-first, then GitHub failover."""
     if '?' in url:
         url = url.split('?')[0]
@@ -461,7 +461,7 @@ def download_video(url, workflow_to_use="download.yml"):
         print(f"LOCAL DOWNLOAD FAILED: {err_str}")
         
         # 2. Trigger GitHub Actions if blocked or extraction fails
-        job_id = str(uuid.uuid4())
+        job_id = existing_job_id or str(uuid.uuid4())
         job_data = {
             'status': 'pending', 
             'url': url,
@@ -480,8 +480,8 @@ def download_video(url, workflow_to_use="download.yml"):
 def process_video_task(url, job_id, user_key, workflow_to_use):
     """Background task to process video and update job_status."""
     try:
-        # Pass workflow_to_use to maintain consistency
-        status, result = download_video(url, workflow_to_use=workflow_to_use)
+        # Pass workflow_to_use and job_id to maintain consistency
+        status, result = download_video(url, workflow_to_use=workflow_to_use, existing_job_id=job_id)
         if status == "SUCCESS":
             save_job(job_id, {
                 'status': 'ready', 
@@ -762,7 +762,13 @@ def get_preview():
                 }
             })
     except Exception as e:
-        print(f"PREVIEW ERROR (Fallback to Placeholder): {e}")
+        import traceback
+        err_detail = traceback.format_exc()
+        print(f"PREVIEW ERROR (Fallback to Placeholder): {e}\n{err_detail}")
+        
+        # Log to activity for remote debugging
+        log_activity('preview_error', {'url': url, 'error': str(e), 'detail': err_detail[:500]})
+        
         # Return a partial success so the UI doesn't break, allowing the download to proceed
         return jsonify({
             'success': True,
