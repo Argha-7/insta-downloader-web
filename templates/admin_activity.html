@@ -262,8 +262,9 @@
             </div>
             <div class="chart-card">
                 <h4>Activity Breakdown</h4>
-                <div style="flex:1; position:relative;">
+                <div id="activityChartContainer" style="flex:1; position:relative;">
                     <canvas id="activityChart"></canvas>
+                    <div id="activityNoData" style="display:none; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-dim);">No data available</div>
                 </div>
             </div>
         </div>
@@ -349,7 +350,8 @@
             // Country Data
             const countryCounts = {};
             logs.forEach(log => {
-                const country = log.location.split(',').pop().trim();
+                const loc = log.location || "Unknown, Unknown";
+                const country = loc.split(',').pop().trim() || "Unknown";
                 countryCounts[country] = (countryCounts[country] || 0) + 1;
             });
             
@@ -357,49 +359,60 @@
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 5);
             
-            new Chart(document.getElementById('countryChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: topCountries.map(c => c[0]),
-                    datasets: [{
-                        data: topCountries.map(c => c[1]),
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } }
-                }
-            });
+            if (topCountries.length > 0) {
+                new Chart(document.getElementById('countryChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: topCountries.map(c => c[0]),
+                        datasets: [{
+                            data: topCountries.map(c => c[1]),
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } }
+                    }
+                });
+            }
 
             // Activity Data
             const activityCounts = {};
             logs.forEach(log => {
-                activityCounts[log.type] = (activityCounts[log.type] || 0) + 1;
-            });
-
-            new Chart(document.getElementById('activityChart'), {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(activityCounts).map(t => t.replace('_', ' ').split(' ')[0]),
-                    datasets: [{
-                        label: 'Events',
-                        data: Object.values(activityCounts),
-                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                        borderColor: '#3b82f6',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    },
-                    plugins: { legend: { display: false } }
+                if (log.type) {
+                    const type = log.type.replace('_', ' ').split(' ')[0];
+                    activityCounts[type] = (activityCounts[type] || 0) + 1;
                 }
             });
+
+            const activityLabels = Object.keys(activityCounts);
+            if (activityLabels.length > 0) {
+                new Chart(document.getElementById('activityChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: activityLabels,
+                        datasets: [{
+                            label: 'Events',
+                            data: Object.values(activityCounts),
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } else {
+                document.getElementById('activityNoData').style.display = 'flex';
+                document.getElementById('activityChart').style.display = 'none';
+            }
 
             // Restore Auto-Refresh state
             const isAuto = localStorage.getItem('admin_auto_refresh') === 'true';

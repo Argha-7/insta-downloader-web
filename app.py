@@ -256,6 +256,16 @@ def log_activity(activity_type, details):
     except Exception as e:
         print(f"LOGGING ERROR: {e}")
 
+def serialize_firestore_data(data):
+    """Converts Firestore datetime objects to strings for JSON serialization."""
+    if isinstance(data, dict):
+        return {k: serialize_firestore_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [serialize_firestore_data(v) for v in data]
+    elif hasattr(data, 'isoformat'): # Handles datetime and Timestamp objects
+        return data.isoformat()
+    return data
+
 def generate_ref_id():
     return str(uuid.uuid4())[:8]
 def get_user_data(ip, gift=None, device_id=None):
@@ -915,9 +925,12 @@ def admin_activity():
     logs = []
     if db:
         try:
+            # Fetch latest 100 logs
             docs = db.collection('activity_logs').order_by('created_at', direction=firestore.Query.DESCENDING).limit(100).stream()
             for doc in docs:
-                logs.append(doc.to_dict())
+                log_data = doc.to_dict()
+                # Ensure all data is JSON serializable for the template
+                logs.append(serialize_firestore_data(log_data))
         except Exception as e:
             print(f"ADMIN LOGS ERROR: {e}")
             
