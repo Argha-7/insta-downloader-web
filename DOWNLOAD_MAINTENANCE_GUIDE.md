@@ -1,73 +1,68 @@
-# Instagram Downloader: Maintenance & Fix Guide
+# Instagram Downloader Maintenance Guide
 
-This document explains how the **Instagram Download and Preview** features work in this project. Use this guide if the features break after new changes or during future AI-assisted development.
+This document provides technical details for maintaining and troubleshooting the Instagram downloader system.
 
 ---
 
-## 1. Overview of the Architecture
+## 🏗️ System Architecture
 
 The system consists of three main components:
-1. **Frontend (Blogger Theme)**: `blogger_theme.xml` handles the UI and initial requests.
-2. **API Layer (Hugging Face Space)**: `app.py` runs a Flask server that performs "Fast Previews" and local downloads.
-3. **Failover Layer (GitHub Actions)**: `.github/workflows/download.yml` runs a worker if the HF Space is blocked by Instagram.
+
+1.  **Frontend (Blogger Theme)**: `blogger_theme.xml` handles the UI and initial requests.
+2.  **API Layer (Hugging Face Space)**: `app.py` runs a Flask server that performs "Fast Previews" and local downloads.
+    - **Hugging Face Hub Persistence**: Data is synced to HF Datasets every 5 minutes.
+    - **Admin Dashboard**: Real-time stats and robust country/activity charts.
+    - **Resilient extraction**: Improved headers and `yt-dlp` settings.
+3.  **Failover Layer (GitHub Actions)**: `.github/workflows/download.yml` runs a worker if the HF Space is blocked by Instagram.
 
 ---
 
-## 2. Key Features and Logic
+## 🌟 Key Features
 
-### A. Preview Feature (Fast)
+### 1. Fast Preview
+Uses `yt-dlp` on the Hugging Face Space to fetch video metadata and a streamable preview URL. This provides instant feedback to users.
 
-- **Location**: `app.py` ( `get_preview()` function ).
-- **How it works**: Uses `yt-dlp` with `download=False` to fetch metadata (title, thumbnail, formats).
-- **Resilience**: If Instagram blocks the HF Space's IP, it returns a **fallback placeholder** (Generic IG icon) but continues the process so the user can still download.
+### 2. Job-Based Downloads
+Large files are handled via a job system.
+- If the Space can download the file, it does so and returns it.
+- If the Space is blocked, it triggers a **GitHub Action** to download the file and send it to the user.
 
-### B. Download Feature (Local + Failover)
-- **Location**: `app.py` ( `download_video()` function ).
-- **Logic**:
-    1.  **Local Attempt**: Tries to download directly on the HF Space.
-    2.  **GitHub Failover**: If the local attempt fails (often due to IP blocking), it triggers a GitHub Action (`download.yml`) to download the video on a fresh GitHub runner IP.
-
----
-
-## 3. Important Configuration (Don't Break These!)
-
-### yt-dlp Options in Python (`app.py`)
-
-To avoid being blocked by Instagram, `ydl_opts` must include:
-1. **SSL Bypass**: `'nocheckcertificate': True`.
-2. **Geo Bypass**: `'geo_bypass': True`.
-3. **Playlist Disable**: `'no_playlist': True`.
-- **User-Agent & Headers**: Must look like a real browser.
-```python
-'http_headers': {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Sec-Fetch-Mode': 'navigate',
-}
-```
-
-### GitHub Workflow CLI Flags (`download.yml`)
-The command in GitHub Actions **MUST** use hyphens for flags, unlike the Python API:
-- **Correct**: `--no-check-certificate`
-- **Incorrect**: `--nocheckcertificate` (This will cause an "Unknown Option" error).
-
-Full command template:
-`python -m yt_dlp -v "${url}" -f "b[ext=mp4]/b" -o "output/video.%(ext)s" --no-playlist --socket-timeout 60 --no-check-certificate`
+### 3. Data Persistence (HF Hub)
+We use the `huggingface_hub` `CommitScheduler` to save `activity.json`, `stats.json`, and `jobs.json` to a private Hugging Face Dataset. This ensures data survives Space restarts.
 
 ---
 
-## 4. Troubleshooting Checklist
+## 🛠️ Critical Configurations
 
-When things break, check these in order:
-1.  **GitHub Action Logs**: Go to "Actions" → "Download Video" on GitHub. Check for `error: no such option`. This usually means a typo in a flag.
-2.  **IP Blocking**: If "Preview" works but "Download" only works after a delay, it means the HF Space is blocked, and the system is successfully failing over to GitHub.
-3.  **Outdated yt-dlp**: Instagram updates their API frequently. Ensure `requirements.txt` includes `yt-dlp` and it gets updated.
-4.  **Blogger API_BASE**: Ensure the `API_BASE` in the Blogger theme points to the correct Hugging Face Space URL.
+### `yt-dlp` Settings
+We use several flags to avoid IP blocks:
+- `--no-check-certificate`: Ignores SSL errors.
+- `--geo-bypass`: Bypasses regional restrictions.
+- `User-Agent`: Mimics a modern Chrome browser on Windows 11.
+
+### Environment Variables
+- `HF_TOKEN`: Required for data persistence (Write access).
+- `DATASET_ID`: HF Dataset ID (e.g., `Argha-7/insta-stats`).
+- `GH_TOKEN`: Required for triggering GitHub Actions failover.
 
 ---
 
-## 5. Recent Fixes (March 2026)
-- **Fixed typo**: Changed `--nocheckcertificate` to `--no-check-certificate` in `download.yml`.
-- **Improved Headers**: Added `Sec-Fetch-Mode` and `Accept-Language` to `app.py` to reduce bot detection.
-- **Enhanced UA**: Updated User-Agent to Chrome 128.
+## 🔍 Troubleshooting
+
+### If Download Fails (Local Error)
+Check the `yt-dlp` options in `app.py`. Ensure the `referer` and `User-Agent` headers are up to date.
+
+### If Persistent Data Resets
+Verify that `HF_TOKEN` and `DATASET_ID` are correctly set in the Space secrets. Check the Space logs for `HF HUB SYNC ERROR`.
+
+### If GitHub Action Fails
+Ensure the secret `GH_TOKEN` is valid and has `repo` and `workflow` permissions. Check if the `.github/workflows/download.yml` has any syntax errors.
+
+---
+
+## 📝 Recent Fixes (v32+)
+
+- **Firebase Migration [REVERTED]**: Switched to HF Hub for a self-contained solution.
+- **Admin Dashboard Refactor**: Switched to `DOMContentLoaded` and data attributes for better reliability.
+- **GHA Typo**: Fixed `--nocheckcertificate` to `--no-check-certificate`.
+- **Ultra-Robust Charts**: Added type checks and error boundaries to the dashboard JS.

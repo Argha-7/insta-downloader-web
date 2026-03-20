@@ -234,6 +234,9 @@
             </div>
         </header>
 
+        <!-- Hidden Data Storage -->
+        <div id="logsDataStore" style="display:none;" data-logs='{{ logs|tojson|safe }}'></div>
+
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>Total Activity</h3>
@@ -344,8 +347,15 @@
     <script>
         // --- Dashboard Initialization ---
         document.addEventListener('DOMContentLoaded', function() {
-            const logsData = {{ logs|tojson }};
-            const logs = Array.isArray(logsData) ? logsData : [];
+            let logs = [];
+            try {
+                const store = document.getElementById('logsDataStore');
+                const rawData = store ? store.getAttribute('data-logs') : '[]';
+                logs = JSON.parse(rawData);
+            } catch (err) {
+                console.error("DATA PARSE ERROR:", err);
+                logs = [];
+            }
 
             // 1. Initialize Auto-Refresh (Live Feed)
             const refreshToggle = document.getElementById('autoRefreshToggle');
