@@ -76,8 +76,8 @@ jobs:
           export PATH="$(dirname $(which node)):$PATH"
           echo "PATH for yt-dlp: $PATH"
           
-          # Use Standalone yt-dlp with TV client and Node JS runtime
-          yt-dlp -v "${{ github.event.inputs.video_url }}" \
+          # Use ABSOLUTE PATH to standalone yt-dlp to avoid using the pip version
+          /usr/local/bin/yt-dlp -v "${{ github.event.inputs.video_url }}" \
             $COOKIES_ARG \
             --extractor-args "youtube:player-client=tv,mweb,android,ios;player-skip=web,web_creator" \
             --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
