@@ -739,56 +739,48 @@ def test_github():
             }
         }), 500
 
-# Helper for admin checks (assuming a simple check for now)
+# Helper for admin checks
 def is_admin():
-    # For a real application, this would involve checking user roles
-    # from Firebase or a dedicated admin token.
-    # For now, let's assume a specific secret header or IP for admin access.
+    # Simple check for demo/private use
     secret = request.headers.get('X-App-Secret')
-    return secret == APP_SECRET # Or check request.fb_user for admin role
+    return secret == 'insta_pro_ai_secure_99'
 
 def sync_to_hf(local_path, remote_filename):
     if scheduler and hf_token:
         try:
-            # Create a temporary file in the DATA_DIR for the scheduler to pick up
-            # This is a workaround if the scheduler only watches DATA_DIR
-            temp_path_in_data_dir = DATA_DIR / remote_filename
-            shutil.copy(local_path, temp_path_in_data_dir)
-            print(f"Copied {local_path} to {temp_path_in_data_dir} for HF sync.")
-            # The scheduler will pick this up on its next commit cycle
-        except Exception as e:
-            print(f"Error syncing {local_path} to HF: {e}")
+            temp_path = DATA_DIR / remote_filename
+            shutil.copy(local_path, temp_path)
+            print(f"Synced {remote_filename} to HF")
+        except Exception as e: print(f"HF Sync Err: {e}")
 
 @app.route('/api/upload-cookies', methods=['POST'])
 def upload_cookies():
-    if not is_admin():
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-        
-    if file:
-            'success': True, 
-            'message': 'Cookies uploaded successfully!',
-            'info': {'size': size, 'active': has_cookies}
-        })
+    if not is_admin(): return jsonify({'error': 'Unauthorized'}), 401
+    file = request.files.get('file')
+    if not file: return jsonify({'error': 'No file'}), 400
+    file.save(COOKIES_FILE)
+    sync_to_hf(COOKIES_FILE, 'youtube_cookies.txt')
+    return jsonify({'success': True, 'message': 'Cookies Saved'})
 
-@app.route('/api/cookie-status', methods=['GET'])
+@app.route('/api/upload-pot', methods=['POST'])
+def upload_pot():
+    if not is_admin(): return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    pot = data.get('pot', '').strip()
+    if not pot: return jsonify({'error': 'No token'}), 400
+    with open(POT_FILE, 'w') as f: f.write(pot)
+    sync_to_hf(POT_FILE, 'youtube_pot.txt')
+    return jsonify({'success': True, 'message': 'PO Token Saved'})
+
+@app.route('/api/cookie-status')
 def cookie_status():
-    """Check if cookies are active."""
-    if not verify_request():
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    has_cookies = os.path.exists(COOKIES_FILE)
-    size = os.path.getsize(COOKIES_FILE) if has_cookies else 0
+    if not is_admin(): return jsonify({'error': 'Unauthorized'}), 401
+    c_exists = os.path.exists(COOKIES_FILE)
+    p_exists = os.path.exists(POT_FILE)
     return jsonify({
-        'active': has_cookies,
-        'size': size,
-        'last_modified': time.ctime(os.path.getmtime(COOKIES_FILE)) if has_cookies else None
+        'active': c_exists,
+        'pot_active': p_exists,
+        'size': os.path.getsize(COOKIES_FILE) if c_exists else 0
     })
 
 @app.route('/withdraw', methods=['POST'])
