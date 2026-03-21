@@ -445,7 +445,10 @@
             
             if (topCountries.length > 0) {
                 const ctx = document.getElementById('countryChart');
+                const noData = document.getElementById('countryNoData');
                 if (ctx) {
+                    if (noData) noData.style.display = 'none';
+                    ctx.style.display = 'block';
                     new Chart(ctx, {
                         type: 'doughnut',
                         data: {
@@ -462,6 +465,11 @@
                         }
                     });
                 }
+            } else {
+                const ctx = document.getElementById('countryChart');
+                const noData = document.getElementById('countryNoData');
+                if (ctx) ctx.style.display = 'none';
+                if (noData) noData.style.display = 'flex';
             }
 
             // --- Activity Data ---
@@ -478,7 +486,10 @@
             const activityLabels = Object.keys(activityCounts);
             if (activityLabels.length > 0) {
                 const ctx = document.getElementById('activityChart');
+                const noData = document.getElementById('activityNoData');
                 if (ctx) {
+                    if (noData) noData.style.display = 'none';
+                    ctx.style.display = 'block';
                     new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -502,7 +513,10 @@
                     });
                 }
             } else {
-                showNoData();
+                const ctx = document.getElementById('activityChart');
+                const noData = document.getElementById('activityNoData');
+                if (ctx) ctx.style.display = 'none';
+                if (noData) noData.style.display = 'flex';
             }
         }
 
