@@ -32,25 +32,40 @@ jobs:
           python -m pip install --upgrade pip
           pip install yt-dlp requests
 
+      - name: Debug Environment
+        run: |
+          python --version
+          node -v
+          pip --version
+
       - name: Download YouTube Video
         id: dl
         run: |
           mkdir -p output
-          # Optimized for YouTube (mobile-client bypass, JS runtime, best MP4)
+          # Try multiple clients, force IPv4, and use JS runtime for signatures
           python -m yt_dlp -v "${{ github.event.inputs.video_url }}" \
-            --extractor-args "youtube:player-client=android,ios;player-skip=web" \
+            --extractor-args "youtube:player-client=web_creator,android,ios,mweb;player-skip=web" \
+            --force-ipv4 \
             -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
             -o "output/video.%(ext)s" \
-            --no-playlist --socket-timeout 120 --no-check-certificate
+            --no-playlist --socket-timeout 100 --no-check-certificate
           
           # Find the actual filename
           REAL_PATH=$(ls output/video.* | head -n 1)
+          if [ -z "$REAL_PATH" ]; then
+             echo "ERROR: Download failed"
+             exit 1
+          fi
           echo "file_path=$REAL_PATH" >> $GITHUB_OUTPUT
 
       - name: Send to Callback
         if: ${{ github.event.inputs.callback_url != '' }}
         run: |
-          DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g --force-ipv4 --no-playlist || echo "")
+          # Use same bypass logic for generating direct URL
+          DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g \
+            --extractor-args "youtube:player-client=web_creator,android,ios,mweb;player-skip=web" \
+            --force-ipv4 --no-playlist || echo "")
+          
           curl -v -X POST --retry 3 \
             -F "file=@${{ steps.dl.outputs.file_path }}" \
             -F "direct_url=${DIRECT_URL}" \

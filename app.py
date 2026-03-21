@@ -501,10 +501,11 @@ def download_video(url, workflow_to_use=None, existing_job_id=None):
             'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'yt_{int(time.time())}_%(id)s.%(ext)s'),
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'ios'],
+                    'player_client': ['web_creator', 'android', 'ios', 'mweb'],
                     'skip': ['web']
                 }
             },
+            'force_ipv4': True,
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
@@ -846,9 +847,10 @@ def get_preview():
             'nocheckcertificate': True,
             'geo_bypass': True,
             'no_playlist': True,
+            'force_ipv4': True,
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'ios'],
+                    'player_client': ['web_creator', 'android', 'ios', 'mweb'],
                     'skip': ['web']
                 }
             }
