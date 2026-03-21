@@ -256,21 +256,19 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>Total Activity</h3>
-                <p>{{ logs|length }}</p>
+                <p id="totalActivityStat">{{ logs|length }}</p>
             </div>
             <div class="stat-card">
                 <h3>Unique Visitors</h3>
-                <p>{{ logs|map(attribute='ip')|unique|list|length }}</p>
+                <p id="uniqueVisitorsStat">{{ logs|map(attribute='ip')|unique|list|length }}</p>
             </div>
             <div class="stat-card">
                 <h3>Downloads</h3>
-                {% set download_count = logs|selectattr('type', 'defined')|selectattr('type', 'match', '^(download|file).*')|list|length %}
-                <p>{{ download_count }}</p>
+                <p id="downloadsStat">0</p>
             </div>
             <div class="stat-card">
                 <h3>Previews</h3>
-                {% set preview_count = logs|selectattr('type', 'defined')|selectattr('type', 'match', '^(preview).*')|list|length %}
-                <p>{{ preview_count }}</p>
+                <p id="previewsStat">0</p>
             </div>
         </div>
 
@@ -379,6 +377,12 @@
                 
                 logs = JSON.parse(rawData);
                 console.log("Dashboard logs loaded:", logs.length);
+                
+                // Update Card Stats from JS (to match charts exactly)
+                const dls = logs.filter(l => l.type && (l.type.startsWith('download') || l.type.startsWith('file'))).length;
+                const pvs = logs.filter(l => l.type && l.type.startsWith('preview')).length;
+                document.getElementById('downloadsStat').innerText = dls;
+                document.getElementById('previewsStat').innerText = pvs;
             } catch (err) {
                 console.error("DATA PARSE ERROR:", err);
                 if (debugPanel && debugMessage) {
