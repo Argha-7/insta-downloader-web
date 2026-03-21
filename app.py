@@ -498,55 +498,87 @@ def download_video(url, workflow_to_use=None, existing_job_id=None):
     """Main download logic with local-first, then GitHub failover."""
     platform = get_platform(url)
     
-    # Select default workflow based on platform if not provided
+def extract_professional(url):
+    """Attempts to extract video links using professional backend APIs."""
+    print(f"DEBUG: Attempting professional extraction for {url}")
+    
+    # 1. Try y2mate.tools API (Reliable mirror)
+    try:
+        api_url = f"https:/""/api2.y2mate.tools/api/v1/info?url={url}"
+        r = requests.get(api_url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+        if r.status_code == 200:
+            data = r.json()
+            if data.get('status') == 'success':
+                video_data = data.get('data', {})
+                # Find best MP4 link
+                formats = video_data.get('formats', [])
+                best_url = ""
+                for f in formats:
+                    if f.get('type') == 'mp4' and f.get('quality') in ['720p', '1080p']:
+                        best_url = f.get('url')
+                        break
+                if not best_url and formats:
+                    best_url = formats[0].get('url')
+                
+                if best_url:
+                    print("SUCCESS: Professional extraction via y2mate.tools")
+                    return {
+                        'title': video_data.get('title', 'YouTube Video'),
+                        'thumbnail': video_data.get('thumbnail', ''),
+                        'hd_url': best_url,
+                        'sd_url': best_url,
+                        'uploader': 'Pro API'
+                    }
+    except Exception as e:
+        print(f"Pro API 1 Failed: {e}")
+
+    # 2. Try Loader.to iframe extraction (Alternative)
+    try:
+        api_url = f"https:/""/loader.to/api/button/?url={url}&f=720"
+        r = requests.get(api_url, timeout=10)
+        # Loader.to often requires regex or further conversion, 
+        # but for now we skip to local if API 1 fails as it's the main candidate.
+        pass
+    except: pass
+
+    return None
+
+def download_video(url, platform='instagram', existing_job_id=None, workflow_to_use=None):
+    """Internal download logic with professional API and local fallbacks."""
+    
+    # Select default workflow
     if workflow_to_use is None:
-        if platform == 'youtube':
-            workflow_to_use = "yt_download.yml"
-        else:
-            workflow_to_use = "insta_download.yml"
+        workflow_to_use = "yt_download.yml" if platform == 'youtube' else "insta_download.yml"
     
-    # URL Normalization (Site-specific)
-    if platform == 'instagram':
-        if '?' in url: url = url.split('?')[0]
-    # For YouTube, we MUST keep param 'v=' so we don't split there.
-    
-    # 1. Try Local Download (Fastest)
+    # URL Normalization
+    if platform == 'instagram' and '?' in url: url = url.split('?')[0]
+
+    # 1. Try Professional API for YouTube (The "Y2Mate" method)
     if platform == 'youtube':
-        ydl_opts = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', 
-            'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'yt_{int(time.time())}_%(id)s.%(ext)s'),
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['tv', 'mweb', 'android', 'ios'],
-                    'skip': ['web', 'web_creator']
-                }
-            },
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'force_ipv4': True,
-            'quiet': True,
-            'no_warnings': True,
-            'nocheckcertificate': True,
-            'geo_bypass': True,
-            'no_playlist': True,
-        }
-        if os.path.exists(COOKIES_FILE):
-            ydl_opts['cookiefile'] = str(COOKIES_FILE)
-            print("USING YOUTUBE COOKIES FOR DOWNLOAD")
-    else: # Default (Instagram)
-        ydl_opts = {
-            'format': 'b[ext=mp4]/b', 
-            'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'insta_{int(time.time())}_%(id)s.%(ext)s'),
-            'quiet': True,
-            'no_warnings': True,
-            'socket_timeout': 120,
-            'nocheckcertificate': True,
-            'geo_bypass': True,
-            'no_playlist': True,
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            }
-        }
+        pro_info = extract_professional(url)
+        if pro_info:
+            increment_downloads()
+            return "SUCCESS", pro_info
+
+    # 2. Try Local Download (yt-dlp + Cookies + POT)
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' if platform == 'youtube' else 'b[ext=mp4]/b',
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'%(id)s_{int(time.time())}.%(ext)s'),
+        'quiet': True,
+        'no_playlist': True,
+        'nocheckcertificate': True,
+        'geo_bypass': True
+    }
+    
+    if platform == 'youtube':
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['tv', 'mweb'], 'skip': ['web']}}
+        if os.path.exists(COOKIES_FILE): ydl_opts['cookiefile'] = str(COOKIES_FILE)
+        # Inject PO Token if available
+        if os.path.exists(POT_FILE):
+            with open(POT_FILE, 'r') as f: pot = f.read().strip()
+            if pot:
+                ydl_opts['extractor_args']['youtube']['po_token'] = [pot]
+                print("USING PO TOKEN FOR LOCAL DOWNLOAD")
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -555,44 +587,33 @@ def download_video(url, workflow_to_use=None, existing_job_id=None):
             if os.path.exists(filename):
                 increment_downloads()
                 
-                # Quality extraction
+                # Quality URLs
                 hd_url = ""
-                sd_url = ""
                 mp4_formats = [f for f in info.get('formats', []) if f.get('ext') == 'mp4' and f.get('vcodec') != 'none']
                 if mp4_formats:
                     mp4_formats.sort(key=lambda x: x.get('height', 0), reverse=True)
                     hd_url = mp4_formats[0].get('url', '')
-                    sd_formats = [f for f in mp4_formats if f.get('height', 0) <= 720]
-                    sd_url = sd_formats[0].get('url', '') if sd_formats else hd_url
 
                 return "SUCCESS", {
                     'filename': os.path.basename(filename),
-                    'title': info.get('title', 'Instagram Video'),
+                    'title': info.get('title', 'Video'),
                     'thumbnail': info.get('thumbnail', ''),
-                    'uploader': info.get('uploader') or info.get('uploader_id'),
-                    'hashtags': info.get('tags') or re.findall(r'#(\w+)', info.get('description', '')),
-                    'hd_url': hd_url,
-                    'sd_url': sd_url
+                    'uploader': info.get('uploader'),
+                    'hd_url': hd_url or info.get('url'),
+                    'sd_url': hd_url or info.get('url')
                 }
     except Exception as e:
         err_str = str(e)
         print(f"LOCAL DOWNLOAD FAILED: {err_str}")
         
-        # 2. Trigger GitHub Actions if blocked or extraction fails
+        # 3. Trigger GitHub Actions Failover
         job_id = existing_job_id or str(uuid.uuid4())
-        job_data = {
-            'status': 'pending', 
-            'url': url,
-            'timestamp': time.time()
-        }
-        save_job(job_id, job_data)
+        save_job(job_id, {'status': 'pending', 'url': url, 'timestamp': time.time()})
         
         if trigger_github_action(url, job_id, workflow=workflow_to_use):
-            increment_downloads() # Count as an attempt/task started
-            print(f"DEBUG: Triggered GitHub Action {workflow_to_use} for {url} (Job: {job_id})")
+            increment_downloads()
             return "PENDING_GITHUB", job_id
         
-        save_job(job_id, {'status': 'failed', 'message': f'Error: {err_str[:100]}'})
         return "FAILED", f"Error: {err_str[:100]}"
 
 def process_video_task(url, job_id, user_key, workflow_to_use):
