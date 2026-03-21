@@ -532,14 +532,24 @@ def extract_professional(url):
     except Exception as e:
         print(f"Pro API 1 Failed: {e}")
 
-    # 2. Try Loader.to iframe extraction (Alternative)
+    # 2. Try Cobalt API (High Quality Backup)
     try:
-        api_url = f"https:/""/loader.to/api/button/?url={url}&f=720"
-        r = requests.get(api_url, timeout=10)
-        # Loader.to often requires regex or further conversion, 
-        # but for now we skip to local if API 1 fails as it's the main candidate.
-        pass
-    except: pass
+        api_url = "https:/""/api.cobalt.tools/api/json"
+        data = {"url": url, "videoQuality": "720"}
+        r = requests.post(api_url, json=data, timeout=10, headers={'Accept': 'application/json'})
+        if r.status_code == 200:
+            res = r.json()
+            if res.get('status') == 'stream' or res.get('url'):
+                print("SUCCESS: Professional extraction via Cobalt")
+                return {
+                    'title': 'YouTube Video',
+                    'thumbnail': '',
+                    'hd_url': res.get('url'),
+                    'sd_url': res.get('url'),
+                    'uploader': 'Cobalt API'
+                }
+    except Exception as e:
+        print(f"Pro API 2 Failed: {e}")
 
     return None
 
