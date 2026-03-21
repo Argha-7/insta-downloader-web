@@ -81,8 +81,15 @@ def verify_request():
 DATA_DIR = Path("data") if os.path.exists("data") else Path(".")
 ACTIVITY_FILE = DATA_DIR / 'activity.json'
 STATS_FILE = DATA_DIR / 'stats.json'
-JOBS_FILE = DATA_DIR / 'jobs.json'
-COOKIES_FILE = DATA_DIR / 'youtube_cookies.txt'
+JOBS_FILE = DATA_DIR
+# Configuration
+DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'downloads')
+if not os.path.exists(DOWNLOAD_FOLDER):
+    os.makedirs(DOWNLOAD_FOLDER)
+
+# Fix for YouTube blocks: Use custom cookies and PO Token
+COOKIES_FILE = os.path.join(DOWNLOAD_FOLDER, 'youtube_cookies.txt')
+POT_FILE = os.path.join(DOWNLOAD_FOLDER, 'youtube_pot.txt')
 
 # ensure the data directory exists
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -95,7 +102,7 @@ dataset_id = os.environ.get('DATASET_ID', 'Argha-7/insta-downloader-logs')
 if hf_token:
     try:
         # Pull latest data from Hub before starting scheduler
-        for filename in ['activity.json', 'stats.json', 'jobs.json', 'youtube_cookies.txt']:
+        for filename in ['activity.json', 'stats.json', 'jobs.json']:
             try:
                 # We expect files to be in the 'logs/' prefix in the repo based on path_in_repo="logs"
                 downloaded_path = hf_hub_download(
@@ -108,6 +115,19 @@ if hf_token:
                 print(f"Successfully pulled {filename} from HF Hub.")
             except Exception as e:
                 print(f"Note: Could not pull {filename} from HF Hub (might be a new setup): {e}")
+
+        # Pull credentials if available
+        for extra in ['youtube_cookies.txt', 'youtube_pot.txt']:
+            try:
+                hf_hub_download(
+                    repo_id=dataset_id, # Use dataset_id for REPO_ID
+                    filename=f"logs/{extra}", # Assuming credentials are also in 'logs'
+                    local_dir=DOWNLOAD_FOLDER,
+                    token=hf_token
+                )
+                print(f"Successfully pulled {extra} from HF Hub")
+            except Exception as e:
+                print(f"No {extra} found on HF Hub or error: {str(e)}")
 
         scheduler = CommitScheduler(
             repo_id=dataset_id,
@@ -144,11 +164,6 @@ limiter = Limiter(
     default_limits=["2000 per day", "500 per hour"],
     storage_uri="memory://",
 )
-
-# Configuration
-DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'downloads')
-if not os.path.exists(DOWNLOAD_FOLDER):
-    os.makedirs(DOWNLOAD_FOLDER)
 
 # Usage tracking (Credits & Cash System)
 # Format: {ip: {'credits': 50, 'balance': 0.0, 'referral_id': '...', 'last_activity': timestamp}}
@@ -706,7 +721,7 @@ def test_github():
     data = request.json or {}
     workflow = data.get('workflow', 'insta_download.yml')
     test_url = "https://www.instagram.com/p/C_abc123/" # Dummy URL
-    test_job_id = f"test-{int(time.now())}" if hasattr(time, 'now') else f"test-{int(time.time())}"
+    test_job_id = f"test-{int(time.time())}"
     
     success = trigger_github_action(test_url, test_job_id, workflow=workflow)
     if success:
@@ -724,27 +739,39 @@ def test_github():
             }
         }), 500
 
+# Helper for admin checks (assuming a simple check for now)
+def is_admin():
+    # For a real application, this would involve checking user roles
+    # from Firebase or a dedicated admin token.
+    # For now, let's assume a specific secret header or IP for admin access.
+    secret = request.headers.get('X-App-Secret')
+    return secret == APP_SECRET # Or check request.fb_user for admin role
+
+def sync_to_hf(local_path, remote_filename):
+    if scheduler and hf_token:
+        try:
+            # Create a temporary file in the DATA_DIR for the scheduler to pick up
+            # This is a workaround if the scheduler only watches DATA_DIR
+            temp_path_in_data_dir = DATA_DIR / remote_filename
+            shutil.copy(local_path, temp_path_in_data_dir)
+            print(f"Copied {local_path} to {temp_path_in_data_dir} for HF sync.")
+            # The scheduler will pick this up on its next commit cycle
+        except Exception as e:
+            print(f"Error syncing {local_path} to HF: {e}")
+
 @app.route('/api/upload-cookies', methods=['POST'])
 def upload_cookies():
-    """Upload youtube_cookies.txt file (Admin only)."""
-    if not verify_request():
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    if not is_admin():
+        return jsonify({'error': 'Unauthorized'}), 401
     
     if 'file' not in request.files:
-        return jsonify({'success': False, 'message': 'No file part'}), 400
+        return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'success': False, 'message': 'No selected file'}), 400
-    
-    if file:
-        file.save(str(COOKIES_FILE))
-        # Logic to notify user about cookie presence
-        has_cookies = os.path.exists(COOKIES_FILE)
-        size = os.path.getsize(COOKIES_FILE) if has_cookies else 0
+        return jsonify({'error': 'No selected file'}), 400
         
-        print(f"ADMIN: YouTube Cookies uploaded successfully ({size} bytes).")
-        return jsonify({
+    if file:
             'success': True, 
             'message': 'Cookies uploaded successfully!',
             'info': {'size': size, 'active': has_cookies}
