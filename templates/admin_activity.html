@@ -301,6 +301,21 @@
                 <div id="diagStatus" style="margin-top: 15px; font-size: 0.9rem; font-weight: 600; color: #64748b;">Ready to test GitHub trigger.</div>
             </div>
         </div>
+        <!-- Cookie Management Section -->
+        <div class="charts-container" style="margin-top: 20px;">
+            <div class="chart-card" id="cookieCard" style="border: 1px dashed #22c55e; background: rgba(34, 197, 94, 0.05); min-height: auto; padding: 20px;">
+                <h4 style="color: #10b981; margin-bottom: 15px;"><i class="fas fa-cookie-bite"></i> YouTube Cookie Management</h4>
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 15px;">
+                    If YouTube downloads fail with "Sign in", upload a fresh Netscape-formatted <code>youtube.com_cookies.txt</code>. 
+                    <a href="https://huggingface.co/spaces/Argha-7/insta-downloader-web/blob/main/DOWNLOAD_MAINTENANCE_GUIDE.md" style="color: var(--primary); text-decoration: none;" target="_blank">View Guide</a>
+                </p>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="file" id="cookieFile" accept=".txt" style="font-size: 0.8rem; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: white;">
+                    <button class="btn btn-primary" onclick="uploadCookies()" style="background: #10b981; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">Upload Cookies</button>
+                </div>
+                <div id="cookieStatus" style="margin-top: 15px; font-size: 0.9rem; font-weight: 600; color: #64748b;">Checking status...</div>
+            </div>
+        </div>
 
         <div class="search-bar">
             <i class="fas fa-search"></i>

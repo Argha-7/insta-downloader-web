@@ -39,7 +39,7 @@ jobs:
           pip --version
 
       - name: Setup Cookies
-        if: ${{ secrets.YT_COOKIES != '' }}
+        if: secrets.YT_COOKIES != ''
         run: |
           echo "${{ secrets.YT_COOKIES }}" > youtube_cookies.txt
           echo "COOKIES_ARG=--cookies youtube_cookies.txt" >> $GITHUB_ENV

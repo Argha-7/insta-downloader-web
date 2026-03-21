@@ -31,5 +31,5 @@ To make the website's internal downloader work:
 ---
 
 ## 🛠️ Troubleshooting
-*   **"Sign in" error persists?** Your cookies might have expired. Simply export a new file and update both GitHub and the Admin Panel.
-*   **Is it safe?** Yes, the cookies are stored securely on your private server/GitHub secrets. However, never share this file with anyone else.
+* **Sign in" error persists?** Your cookies might have expired. Simply export a new file and update both GitHub and the Admin Panel.
+* **Is it safe?** Yes, the cookies are stored securely on your private server/GitHub secrets. However, never share this file with anyone else.
