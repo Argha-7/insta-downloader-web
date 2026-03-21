@@ -636,8 +636,16 @@ def handle_download():
     job_id = str(uuid.uuid4())
     save_job(job_id, {'status': 'pending', 'timestamp': time.time(), 'url': url})
     
-    # Determine which workflow to use (App vs Website) BEFORE starting thread
-    workflow_to_use = "app_download.yml" if request.path == '/share_target' or (request.referrer and '/app' in request.referrer) else "download.yml"
+    # Determine which workflow to use (App vs Website)
+    platform = get_platform(url)
+    is_app = request.path == '/share_target' or (request.referrer and '/app' in request.referrer)
+    
+    if platform == 'youtube':
+        workflow_to_use = "yt_download.yml"
+    elif is_app:
+        workflow_to_use = "app_download.yml"
+    else:
+        workflow_to_use = "insta_download.yml"
     
     thread = threading.Thread(target=process_video_task, args=(url, job_id, user_key, workflow_to_use))
     thread.daemon = True
