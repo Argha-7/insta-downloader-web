@@ -62,10 +62,15 @@ jobs:
           mkdir -p output
           echo "Starting download with cookies: ${{ steps.setup_cookies.outputs.HAS_COOKIES }}"
           
-          # Try download and capture error
+          # Force Node.js to be visible to yt-dlp for JS challenges
+          NODE_PATH=$(which node)
+          echo "Node.js path: $NODE_PATH"
+          
+          # Use TV client (less restricted) and skip web clients
           python -m yt_dlp -v "${{ github.event.inputs.video_url }}" \
             $COOKIES_ARG \
-            --extractor-args "youtube:player-client=web_creator,android,ios,mweb;player-skip=web" \
+            --extractor-args "youtube:player-client=tv,mweb,android,ios;player-skip=web,web_creator" \
+            --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
             --force-ipv4 \
             -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
             -o "output/video.%(ext)s" \
