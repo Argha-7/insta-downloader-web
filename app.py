@@ -502,10 +502,11 @@ def download_video(url, workflow_to_use=None, existing_job_id=None):
             'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'yt_{int(time.time())}_%(id)s.%(ext)s'),
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['web_creator', 'android', 'ios', 'mweb'],
-                    'skip': ['web']
+                    'player_client': ['tv', 'mweb', 'android', 'ios'],
+                    'skip': ['web', 'web_creator']
                 }
             },
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'force_ipv4': True,
             'quiet': True,
             'no_warnings': True,
@@ -892,10 +893,11 @@ def get_preview():
             'geo_bypass': True,
             'no_playlist': True,
             'force_ipv4': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['web_creator', 'android', 'ios', 'mweb'],
-                    'skip': ['web']
+                    'player_client': ['tv', 'mweb', 'android', 'ios'],
+                    'skip': ['web', 'web_creator']
                 }
             }
         }
