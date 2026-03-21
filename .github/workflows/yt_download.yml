@@ -40,7 +40,7 @@ jobs:
 
       - name: Setup Cookies
         env:
-          MY_COOKIES: ${{ secrets.YT_COOKIES }}
+          MY_COOKIES: ${{ secrets['YT_COOKIES'] }}
         if: env.MY_COOKIES != ''
         run: |
           echo "$MY_COOKIES" > youtube_cookies.txt
