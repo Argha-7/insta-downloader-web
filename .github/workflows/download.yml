@@ -30,8 +30,11 @@ jobs:
         id: dl
         run: |
           mkdir -p output
-          # Use yt-dlp to download (with verbose logging and better settings for IG)
-          python -m yt_dlp -v "${{ github.event.inputs.video_url }}" -f "b[ext=mp4]/b" -o "output/video.%(ext)s" --no-playlist --socket-timeout 60 --no-check-certificate
+          # Use yt-dlp to download (with verbose logging and mobile-client bypass for YT)
+          python -m yt_dlp -v "${{ github.event.inputs.video_url }}" \
+            --extractor-args "youtube:player-client=android,ios;player-skip=web" \
+            -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
+            -o "output/video.%(ext)s" --no-playlist --socket-timeout 60 --no-check-certificate
           # Find the actual filename (e.g., video.mp4)
           REAL_PATH=$(ls output/video.* | head -n 1)
           echo "file_path=$REAL_PATH" >> $GITHUB_OUTPUT

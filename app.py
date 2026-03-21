@@ -491,6 +491,12 @@ def download_video(url, workflow_to_use="download.yml", existing_job_id=None):
         ydl_opts = {
             'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', 
             'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'yt_{int(time.time())}_%(id)s.%(ext)s'),
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'ios'],
+                    'skip': ['web']
+                }
+            },
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
@@ -797,6 +803,12 @@ def get_preview():
             'nocheckcertificate': True,
             'geo_bypass': True,
             'no_playlist': True,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'ios'],
+                    'skip': ['web']
+                }
+            }
         }
     else: # Instagram
         ydl_opts = {
