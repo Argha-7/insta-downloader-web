@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 @app.route('/debug/version')
 def debug_version():
-    return jsonify({"version": "v32-resilience-fix", "time": time.time()})
+    return jsonify({"version": "v32-persistence-pull-v2", "time": time.time()})
 # Global lock for user_credits to prevent race conditions
 data_lock = threading.Lock()
 # Simplified CORS for debugging - allows all origins and headers temporarily
@@ -938,7 +938,7 @@ def admin_activity():
             try: logs = json.load(f)
             except: logs = []
     
-    response = make_response(render_template('admin_activity.html', logs=logs))
+    response = make_response(render_template('admin_activity.html', logs=logs, hf_sync=(scheduler is not None)))
     response.headers['X-Frame-Options'] = 'ALLOWALL' 
     response.headers['Content-Security-Policy'] = "frame-ancestors *"
     return response

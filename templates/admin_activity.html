@@ -109,6 +109,7 @@
         .badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
         .badge-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
         .badge-purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+        .badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
         
         .user-cell { display: flex; flex-direction: column; }
         .user-name { font-weight: 600; color: #fff; }
@@ -216,6 +217,16 @@
         <header>
             <div class="logo">
                 <i class="fas fa-chart-line"></i> InstaStream Admin
+                <span style="font-size: 0.6rem; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 10px; color: var(--text-dim);">v32-persistence-pull-v2</span>
+                {% if hf_sync %}
+                <span class="badge badge-green" style="margin-left: 10px; border: 1px solid rgba(34, 197, 94, 0.3);">
+                    <i class="fas fa-database"></i> HF Hub Cloud Active
+                </span>
+                {% else %}
+                <span class="badge badge-red" style="margin-left: 10px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                    <i class="fas fa-exclamation-triangle"></i> Local-Only Mode (No HF_TOKEN)
+                </span>
+                {% endif %}
             </div>
             <div style="display:flex; gap:20px; align-items:center;">
                 <div class="toggle-container">
