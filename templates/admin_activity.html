@@ -264,11 +264,13 @@
             </div>
             <div class="stat-card">
                 <h3>Downloads</h3>
-                <p>{{ logs|selectattr('type', 'equalto', 'download_success')|list|length + logs|selectattr('type', 'equalto', 'file_download_complete')|list|length }}</p>
+                {% set download_count = logs|selectattr('type', 'defined')|selectattr('type', 'match', '^(download|file).*')|list|length %}
+                <p>{{ download_count }}</p>
             </div>
             <div class="stat-card">
                 <h3>Previews</h3>
-                <p>{{ logs|selectattr('type', 'equalto', 'preview_success')|list|length }}</p>
+                {% set preview_count = logs|selectattr('type', 'defined')|selectattr('type', 'match', '^(preview).*')|list|length %}
+                <p>{{ preview_count }}</p>
             </div>
         </div>
 
