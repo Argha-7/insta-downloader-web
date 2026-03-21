@@ -83,11 +83,12 @@
 <body>
     <div class="container">
         <i class="fab fa-instagram logo"></i>
-        <h1>InstaStream <span>AI</span></h1>
-        <div class="status" id="status">Ready to download</div>
+        <h2 style="margin-bottom: 5px;">InstaStream <span>Pro</span></h2>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px;">Download IG Reels & YouTube Videos</p>
         
-        <div class="progress-bar" id="progBar">
-            <div class="progress-fill" id="progFill"></div>
+        <div class="input-group">
+            <input type="text" id="videoUrl" placeholder="Paste link here (IG or YouTube)..." value="{{ prefill_url if prefill_url else '' }}">
+            <button id="downloadBtn">Download</button>
         </div>
 
         <a id="dlBtn" class="btn" href="#" download>Save to Gallery</a>

@@ -468,28 +468,50 @@ def trigger_github_action(video_url, job_id, workflow="download.yml"):
         print(f"GitHub Trigger Exception: {e}")
         return False
 
+def get_platform(url):
+    """Detects the platform from the URL."""
+    url = url.lower()
+    if 'instagram.com' in url or 'instagr.am' in url:
+        return 'instagram'
+    if 'youtube.com' in url or 'youtu.be' in url or 'youtube-nocookie.com' in url:
+        return 'youtube'
+    return 'other'
+
 def download_video(url, workflow_to_use="download.yml", existing_job_id=None):
     """Main download logic with local-first, then GitHub failover."""
-    if '?' in url:
-        url = url.split('?')[0]
+    platform = get_platform(url)
+    
+    # URL Normalization (Site-specific)
+    if platform == 'instagram':
+        if '?' in url: url = url.split('?')[0]
+    # For YouTube, we MUST keep param 'v=' so we don't split there.
     
     # 1. Try Local Download (Fastest)
-    ydl_opts = {
-        'format': 'b[ext=mp4]/b', 
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'insta_{int(time.time())}_%(id)s.%(ext)s'),
-        'quiet': True,
-        'no_warnings': True,
-        'socket_timeout': 120,
-        'nocheckcertificate': True,
-        'geo_bypass': True,
-        'no_playlist': True,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Sec-Fetch-Mode': 'navigate',
+    if platform == 'youtube':
+        ydl_opts = {
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', 
+            'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'yt_{int(time.time())}_%(id)s.%(ext)s'),
+            'quiet': True,
+            'no_warnings': True,
+            'nocheckcertificate': True,
+            'geo_bypass': True,
+            'no_playlist': True,
         }
-    }
+    else: # Default (Instagram)
+        ydl_opts = {
+            'format': 'b[ext=mp4]/b', 
+            'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'insta_{int(time.time())}_%(id)s.%(ext)s'),
+            'quiet': True,
+            'no_warnings': True,
+            'socket_timeout': 120,
+            'nocheckcertificate': True,
+            'geo_bypass': True,
+            'no_playlist': True,
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            }
+        }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -608,7 +630,12 @@ def handle_download():
     thread.daemon = True
     thread.start()
 
-    log_activity('download_request', {'url': url, 'device_id': data.get('device_id')})
+    platform = get_platform(url)
+    log_activity('download_request', {
+        'url': url, 
+        'device_id': data.get('device_id'),
+        'platform': platform
+    })
 
     return jsonify({
         'success': True, 
@@ -755,27 +782,34 @@ def get_preview():
     gift = data.get('gift') or request.args.get('gift')
     device_id = data.get('device_id')
     
-    ip = get_client_ip()
-    user_data = get_user_data(ip, gift=gift, device_id=device_id)
-    
+    platform = get_platform(url)
     url = data.get('url')
     if not url: return jsonify({'success': False, 'message': 'No URL provided'}), 400
     
-    if '?' in url: url = url.split('?')[0]
+    if platform == 'instagram':
+        if '?' in url: url = url.split('?')[0]
     
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'nocheckcertificate': True,
-        'geo_bypass': True,
-        'no_playlist': True,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Sec-Fetch-Mode': 'navigate',
+    # Platform-specific ydl_opts
+    if platform == 'youtube':
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'nocheckcertificate': True,
+            'geo_bypass': True,
+            'no_playlist': True,
         }
-    }
+    else: # Instagram
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'nocheckcertificate': True,
+            'geo_bypass': True,
+            'no_playlist': True,
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            }
+        }
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -811,7 +845,8 @@ def get_preview():
                 'url': url, 
                 'title': info.get('title'),
                 'uploader': uploader,
-                'interests': hashtags[:10] # Top 10 hashtags
+                'platform': platform,
+                'interests': hashtags[:10]
             })
 
             return jsonify({

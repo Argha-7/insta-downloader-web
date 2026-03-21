@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InstaStream - Premium Downloader</title>
+    <title>InstaStream Pro - Instagram & YouTube Downloader</title>
+    <meta name="description" content="Download Instagram Reels and YouTube Videos in High Quality for FREE. Fast, Secure, and No Login Required.">
+    <meta name="keywords" content="Instagram Downloader, YouTube Downloader, Reels Downloader, YouTube Shorts Downloader, Video Downloader, High Quality MP4">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Google tag (gtag.js) - Replace G-XXXXXXXXXX with your ID -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
@@ -194,15 +196,15 @@
     <div class="blob blob-2"></div>
 
     <div class="container">
-        <h1>InstaStream</h1>
-        <p>Paste your Instagram URL to download in high quality</p>
-
-        <div class="input-group">
-            <input type="text" id="urlInput" placeholder="https://www.instagram.com/reel/..." autocomplete="off">
-        </div>
-
-        <button id="downloadBtn" onclick="startDownload()">Download Video</button>
-
+                    <h1>InstaStream <span>Pro</span></h1>
+                    <p>Download IG Reels & YouTube Videos in Seconds</p>
+                    <div class="input-container">
+                        <input type="text" id="videoUrl" placeholder="Paste Instagram Reel or YouTube Link here..." aria-label="Video URL">
+                        <button id="downloadBtn" onclick="handleDownload()">Download Now</button>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.8rem; opacity: 0.8; color: #fff;">
+                        <i class="fab fa-instagram"></i> Instagram Reels & <i class="fab fa-youtube"></i> YouTube Shorts supported!
+                    </div>
         <div id="status"></div>
 
         <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
