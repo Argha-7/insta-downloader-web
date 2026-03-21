@@ -39,30 +39,45 @@ jobs:
           pip --version
 
       - name: Setup Cookies
+        id: setup_cookies
         env:
           MY_COOKIES: ${{ secrets['YT_COOKIES'] }}
-        if: env.MY_COOKIES != ''
         run: |
-          echo "$MY_COOKIES" > youtube_cookies.txt
-          echo "COOKIES_ARG=--cookies youtube_cookies.txt" >> $GITHUB_ENV
+          if [ -n "$MY_COOKIES" ]; then
+            echo "$MY_COOKIES" > youtube_cookies.txt
+            echo "COOKIES_ARG=--cookies youtube_cookies.txt" >> $GITHUB_ENV
+            echo "HAS_COOKIES=true" >> $GITHUB_OUTPUT
+            echo "Cookies file created successfully."
+            head -n 2 youtube_cookies.txt # Debug: show first 2 lines
+          else
+            echo "HAS_COOKIES=false" >> $GITHUB_OUTPUT
+            echo "No YT_COOKIES secret found."
+          fi
 
       - name: Download YouTube Video
         id: dl
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: |
           mkdir -p output
-          # Try with cookies if available (using shell variable to please linter)
+          echo "Starting download with cookies: ${{ steps.setup_cookies.outputs.HAS_COOKIES }}"
+          
+          # Try download and capture error
           python -m yt_dlp -v "${{ github.event.inputs.video_url }}" \
             $COOKIES_ARG \
             --extractor-args "youtube:player-client=web_creator,android,ios,mweb;player-skip=web" \
             --force-ipv4 \
             -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
             -o "output/video.%(ext)s" \
-            --no-playlist --socket-timeout 100 --no-check-certificate
+            --no-playlist --socket-timeout 100 --no-check-certificate || {
+              echo "YT-DLP FAILED! Check logic above."
+              exit 1
+            }
           
           # Find the actual filename
           REAL_PATH=$(ls output/video.* | head -n 1)
           if [ -z "$REAL_PATH" ]; then
-             echo "ERROR: Download failed"
+             echo "ERROR: Video file not found in output directory."
              exit 1
           fi
           echo "file_path=$REAL_PATH" >> $GITHUB_OUTPUT
@@ -74,7 +89,7 @@ jobs:
           DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g \
             $COOKIES_ARG \
             --extractor-args "youtube:player-client=web_creator,android,ios,mweb;player-skip=web" \
-            --force-ipv4 --no-playlist || echo "")
+            --force-ipv4 --no-playlist || echo "FAILED_TO_GET_DIRECT_URL")
           
           curl -v -X POST --retry 3 \
             -F "file=@${{ steps.dl.outputs.file_path }}" \
