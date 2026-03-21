@@ -38,20 +38,22 @@ jobs:
           node -v
           pip --version
 
-      - name: Setup Cookies
-        id: setup_cookies
+      - name: Setup Env (Cookies & PO Token)
+        id: setup_env
         env:
           MY_COOKIES: ${{ secrets['YT_COOKIES'] }}
+          MY_PO_TOKEN: ${{ secrets['YT_PO_TOKEN'] }}
         run: |
           if [ -n "$MY_COOKIES" ]; then
             echo "$MY_COOKIES" > youtube_cookies.txt
             echo "COOKIES_ARG=--cookies youtube_cookies.txt" >> $GITHUB_ENV
             echo "HAS_COOKIES=true" >> $GITHUB_OUTPUT
-            echo "Cookies file created successfully."
-            head -n 2 youtube_cookies.txt # Debug: show first 2 lines
-          else
-            echo "HAS_COOKIES=false" >> $GITHUB_OUTPUT
-            echo "No YT_COOKIES secret found."
+            echo "Cookies file created."
+          fi
+          if [ -n "$MY_PO_TOKEN" ]; then
+            echo "POT_ARG=--extractor-args youtube:po_token=$MY_PO_TOKEN" >> $GITHUB_ENV
+            echo "HAS_POT=true" >> $GITHUB_OUTPUT
+            echo "PO Token found."
           fi
 
       - name: Install Standalone yt-dlp
@@ -70,15 +72,16 @@ jobs:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: |
           mkdir -p output
-          echo "Starting download with cookies: ${{ steps.setup_cookies.outputs.HAS_COOKIES }}"
+          echo "Starting download (Cookies: ${{ steps.setup_env.outputs.HAS_COOKIES }}, POT: ${{ steps.setup_env.outputs.HAS_POT }})"
           
           # Force Node.js directory into PATH for the subprocess
           export PATH="$(dirname $(which node)):$PATH"
           echo "PATH for yt-dlp: $PATH"
           
-          # Use ABSOLUTE PATH to standalone yt-dlp to avoid using the pip version
+          # Use ABSOLUTE PATH to standalone yt-dlp with POT support
           /usr/local/bin/yt-dlp -v "${{ github.event.inputs.video_url }}" \
             $COOKIES_ARG \
+            $POT_ARG \
             --extractor-args "youtube:player-client=tv,mweb,android,ios;player-skip=web,web_creator" \
             --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
             --force-ipv4 \

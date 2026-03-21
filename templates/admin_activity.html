@@ -313,7 +313,23 @@
                     <input type="file" id="cookieFile" accept=".txt" style="font-size: 0.8rem; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: white;">
                     <button class="btn btn-primary" onclick="uploadCookies()" style="background: #10b981; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">Upload Cookies</button>
                 </div>
+                <!-- PO Token Input -->
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 15px;">
+                    <input type="text" id="poToken" placeholder="Paste PO Token here..." style="flex:1; font-size: 0.8rem; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: white;">
+                    <button class="btn btn-primary" onclick="uploadPOT()" style="background: #3b82f6; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">Save PO Token</button>
+                </div>
                 <div id="cookieStatus" style="margin-top: 15px; font-size: 0.9rem; font-weight: 600; color: #64748b;">Checking status...</div>
+            </div>
+        </div>
+
+        <!-- PO Token Management -->
+        <div class="charts-container" style="margin-top: 20px;">
+            <div class="chart-card" style="border: 1px dashed #3b82f6; background: rgba(59, 130, 246, 0.05); min-height: auto; padding: 20px;">
+                <h4 style="color: #3b82f6; margin-bottom: 15px;"><i class="fas fa-key"></i> YouTube PO Token</h4>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="poToken" placeholder="Paste PO Token here..." style="flex:1; font-size: 0.8rem; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: white;">
+                    <button class="btn btn-primary" onclick="uploadPOT()" style="background: #3b82f6; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">Save Token</button>
+                </div>
             </div>
         </div>
 
@@ -638,12 +654,37 @@
                     headers: { 'X-App-Secret': 'insta_pro_ai_secure_99' }
                 });
                 const data = await res.json();
-                if (data.active) {
-                    status.innerHTML = `✅ <span style="color:#10b981">Active</span> (${(data.size/1024).toFixed(1)} KB) - Last updated: ${data.last_modified}`;
-                } else {
-                    status.innerHTML = `❌ <span style="color:#ef4444">Missing / Inactive</span>`;
-                }
-            } catch (e) { console.error("Cookie check failed"); }
+                let msg = [];
+                if (data.active) msg.push(`<span style="color:#10b981">Cookies ✅</span> (${(data.size/1024).toFixed(1)} KB)`);
+                else msg.push(`<span style="color:#ef4444">Cookies ❌</span>`);
+                
+                if (data.pot_active) msg.push(`<span style="color:#10b981">POT ✅</span>`);
+                else msg.push(`<span style="color:#ef4444">POT ❌</span>`);
+                
+                status.innerHTML = msg.join(' | ');
+            } catch (e) { status.innerText = "Status check failed"; }
+        }
+
+        async function uploadPOT() {
+            const pot = document.getElementById('poToken').value.trim();
+            if (!pot) return alert("Paste token first!");
+            
+            try {
+                const res = await fetch('/api/upload-pot', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-App-Secret': 'insta_pro_ai_secure_99'
+                    },
+                    body: JSON.stringify({ pot })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("PO Token saved!");
+                    checkCookieStatus();
+                    document.getElementById('poToken').value = '';
+                } else alert(data.message);
+            } catch (e) { alert(e.message); }
         }
 
         async function uploadCookies() {

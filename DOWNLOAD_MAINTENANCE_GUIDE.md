@@ -8,6 +8,14 @@ YouTube frequently blocks servers (like GitHub and Hugging Face) by asking them 
 3. Click the extension icon and click **"Export"** (choose Netscape format).
 4. You will get a file named `youtube.com_cookies.txt`.
 
+### 🛡️ Part 2: Generating "PO Token" (Mandatory for Server)
+YouTube now requires a "Proof of Origin" token.
+
+1. Open [YouTube.com](https://www.youtube.com).
+2. Press `F12` > **Network** tab.
+3. Refresh page and search for `service_worker`.
+4. Look for `po_token` in headers/payload and copy it.
+
 ---
 
 ## 2. Fixing "Failover" (GitHub Actions)
