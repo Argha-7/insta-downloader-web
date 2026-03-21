@@ -289,6 +289,19 @@
             </div>
         </div>
 
+        <!-- Diagnostics Section -->
+        <div class="charts-container" style="margin-top: 20px;">
+            <div class="chart-card" style="border: 1px dashed #ef4444; background: rgba(239, 68, 68, 0.05); min-height: auto; padding: 20px;">
+                <h4 style="color: #ef4444; margin-bottom: 15px;"><i class="fas fa-tools"></i> System Diagnostics</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="testGitHub('insta_download.yml')" style="background: #3b82f6; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">Test IG Action</button>
+                    <button class="btn btn-primary" onclick="testGitHub('yt_download.yml')" style="background: #ef4444; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">Test YT Action</button>
+                    <button class="btn btn-primary" onclick="testGitHub('app_download.yml')" style="background: #1e293b; border: none; padding: 10px 20px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">Test App Action</button>
+                </div>
+                <div id="diagStatus" style="margin-top: 15px; font-size: 0.9rem; font-weight: 600; color: #64748b;">Ready to test GitHub trigger.</div>
+            </div>
+        </div>
+
         <div class="search-bar">
             <i class="fas fa-search"></i>
             <input type="text" id="logSearch" placeholder="Search by name, email, IP, or location..." onkeyup="filterLogs()">
@@ -572,6 +585,35 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        }
+        // --- System Diagnostics ---
+        async function testGitHub(workflow) {
+            const status = document.getElementById('diagStatus');
+            status.innerText = `🔄 Triggering ${workflow}...`;
+            status.style.color = '#666';
+            
+            try {
+                const res = await fetch('/api/test-github', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-App-Secret': 'insta_pro_ai_secure_99' // Use the same secret for diagnostic
+                    },
+                    body: JSON.stringify({ workflow })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    status.innerText = `✅ ${data.message}`;
+                    status.style.color = '#10b981';
+                } else {
+                    status.innerText = `❌ ${data.message} ${data.debug ? `(Token: ${data.debug.token_set}, Repo: ${data.debug.repo_name})` : ''}`;
+                    status.style.color = '#ef4444';
+                    console.error("Debug Info:", data.debug);
+                }
+            } catch (e) {
+                status.innerText = `❌ Error: ${e.message}`;
+                status.style.color = '#ef4444';
+            }
         }
     </script>
 </body>

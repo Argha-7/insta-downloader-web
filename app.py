@@ -691,6 +691,33 @@ def check_limit():
         'reward': SHARE_REWARD
     })
 
+@app.route('/api/test-github', methods=['POST'])
+def test_github():
+    """Diagnostic endpoint to test GitHub Action trigger."""
+    if not verify_request():
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    data = request.json or {}
+    workflow = data.get('workflow', 'insta_download.yml')
+    test_url = "https://www.instagram.com/p/C_abc123/" # Dummy URL
+    test_job_id = f"test-{int(time.now())}" if hasattr(time, 'now') else f"test-{int(time.time())}"
+    
+    success = trigger_github_action(test_url, test_job_id, workflow=workflow)
+    if success:
+        return jsonify({'success': True, 'message': f'Successfully triggered {workflow} on GitHub!'})
+    else:
+        token = os.environ.get('GH_TOKEN')
+        repo = os.environ.get('GH_REPO')
+        return jsonify({
+            'success': False, 
+            'message': 'Trigger failed. Check server logs.',
+            'debug': {
+                'token_set': bool(token),
+                'repo_set': bool(repo),
+                'repo_name': repo
+            }
+        }), 500
+
 @app.route('/withdraw', methods=['POST'])
 def handle_withdraw():
     """Placeholder for withdrawal requests."""
