@@ -424,13 +424,13 @@ def share_target():
     
     return "Invalid link. Please try again.", 400
 
-def trigger_github_action(video_url, job_id, workflow="download.yml"):
+def trigger_github_action(video_url, job_id, workflow="insta_download.yml"):
     """Triggers the specified GitHub Action workflow."""
     token = os.environ.get('GH_TOKEN')
-    repo = os.environ.get('GH_REPO') # e.g., "Argha-7/insta-downloader-web"
+    repo = os.environ.get('GH_REPO')
     
     if not token or not repo:
-        print("GITHUB ERROR: GH_TOKEN or GH_REPO not set in Secrets.")
+        print(f"GITHUB ERROR: Secrets missing. Token: {'set' if token else 'NOT SET'}, Repo: {repo or 'NOT SET'}")
         return False
 
     url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
@@ -459,10 +459,11 @@ def trigger_github_action(video_url, job_id, workflow="download.yml"):
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=120)
         if response.status_code == 204:
-            print(f"GitHub Action triggered for Job: {job_id}")
+            print(f"DEBUG: GitHub Action triggered successfully: {workflow}")
             return True
         else:
-            print(f"GitHub API Error: {response.status_code} - {response.text}")
+            print(f"GITHUB API ERROR [{response.status_code}]: {response.text}")
+            print(f"Tried URL: {url}")
             return False
     except Exception as e:
         print(f"GitHub Trigger Exception: {e}")
