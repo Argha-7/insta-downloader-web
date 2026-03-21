@@ -1,8 +1,10 @@
+name: YouTube Downloader Failover
+
 on:
   workflow_dispatch:
     inputs:
       video_url:
-        description: 'Instagram Reel/Video URL'
+        description: 'YouTube Video/Short URL'
         required: true
       callback_url:
         description: 'Hugging Face Callback URL'
@@ -11,47 +13,51 @@ on:
 jobs:
   download:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Install Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install yt-dlp requests
 
-      - name: Download Video
+      - name: Download YouTube Video
         id: dl
         run: |
           mkdir -p output
-          # Use yt-dlp to download (with verbose logging and mobile-client bypass for YT)
+          # Optimized for YouTube (mobile-client bypass, JS runtime, best MP4)
           python -m yt_dlp -v "${{ github.event.inputs.video_url }}" \
             --extractor-args "youtube:player-client=android,ios;player-skip=web" \
             -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
-            -o "output/video.%(ext)s" --no-playlist --socket-timeout 60 --no-check-certificate
-          # Find the actual filename (e.g., video.mp4)
+            -o "output/video.%(ext)s" \
+            --no-playlist --socket-timeout 120 --no-check-certificate
+          
+          # Find the actual filename
           REAL_PATH=$(ls output/video.* | head -n 1)
           echo "file_path=$REAL_PATH" >> $GITHUB_OUTPUT
 
       - name: Send to Callback
         if: ${{ github.event.inputs.callback_url != '' }}
         run: |
-          # Get direct URL (handle potential empty output) - force IPv4 to avoid some blocks
           DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g --force-ipv4 --no-playlist || echo "")
-          # Send both file (backup) and direct URL (fast) with proper quoting
           curl -v -X POST --retry 3 \
             -F "file=@${{ steps.dl.outputs.file_path }}" \
             -F "direct_url=${DIRECT_URL}" \
             "${{ github.event.inputs.callback_url }}"
 
-      - name: Upload Artifact (Backup)
-        uses: actions/upload-artifact@v7
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: downloaded-video
+          name: yt-download
           path: output/

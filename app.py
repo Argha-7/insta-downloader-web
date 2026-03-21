@@ -477,9 +477,16 @@ def get_platform(url):
         return 'youtube'
     return 'other'
 
-def download_video(url, workflow_to_use="download.yml", existing_job_id=None):
+def download_video(url, workflow_to_use=None, existing_job_id=None):
     """Main download logic with local-first, then GitHub failover."""
     platform = get_platform(url)
+    
+    # Select default workflow based on platform if not provided
+    if workflow_to_use is None:
+        if platform == 'youtube':
+            workflow_to_use = "yt_download.yml"
+        else:
+            workflow_to_use = "insta_download.yml"
     
     # URL Normalization (Site-specific)
     if platform == 'instagram':
