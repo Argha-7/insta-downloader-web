@@ -54,6 +54,16 @@ jobs:
             echo "No YT_COOKIES secret found."
           fi
 
+      - name: Install Standalone yt-dlp
+        run: |
+          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+          # Symlink node to nodejs just in case yt-dlp is looking for that name
+          NODE_EXE=$(which node)
+          sudo ln -s "$NODE_EXE" /usr/local/bin/nodejs || true
+          echo "yt-dlp version:"
+          yt-dlp --version
+
       - name: Download YouTube Video
         id: dl
         env:
@@ -62,12 +72,12 @@ jobs:
           mkdir -p output
           echo "Starting download with cookies: ${{ steps.setup_cookies.outputs.HAS_COOKIES }}"
           
-          # Force Node.js to be visible to yt-dlp for JS challenges
-          NODE_PATH=$(which node)
-          echo "Node.js path: $NODE_PATH"
+          # Force Node.js directory into PATH for the subprocess
+          export PATH="$(dirname $(which node)):$PATH"
+          echo "PATH for yt-dlp: $PATH"
           
-          # Use TV client (less restricted) and skip web clients
-          python -m yt_dlp -v "${{ github.event.inputs.video_url }}" \
+          # Use Standalone yt-dlp with TV client and Node JS runtime
+          yt-dlp -v "${{ github.event.inputs.video_url }}" \
             $COOKIES_ARG \
             --extractor-args "youtube:player-client=tv,mweb,android,ios;player-skip=web,web_creator" \
             --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
