@@ -592,6 +592,46 @@
                 box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             }
 
+            /* Platform Tabs */
+            .downloader-tabs {
+                display: flex;
+                justify-content: center;
+                gap: 15px;
+                margin-bottom: 25px;
+                position: relative;
+                z-index: 20;
+            }
+            .tab-item {
+                background: var(--glass);
+                padding: 12px 25px;
+                border-radius: 50px;
+                font-weight: 700;
+                font-size: 0.95rem;
+                cursor: pointer;
+                border: 1px solid var(--glass-border);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: var(--text-muted);
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .tab-item.active {
+                background: var(--grad);
+                color: white;
+                border: none;
+                box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+                transform: scale(1.05);
+            }
+            .tab-item:hover:not(.active) {
+                background: rgba(255,255,255,0.9);
+                transform: translateY(-2px);
+            }
+            .tab-item i { font-size: 1.1rem; }
+            .tab-item.tab-yt.active {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2);
+            }
+
             .res-thumb, #resVideo {
                 width: 100%;
                 height: auto;
@@ -884,7 +924,7 @@
         <canvas id='particle-canvas'></canvas>
         <nav class='navbar'>
             <a class='logo' href='/'>
-                <i class="fab fa-instagram"></i> InstaStream <span>AI</span>
+                <i class="fab fa-instagram"></i> InstaStream <span>Pro</span>
             </a>
             <div style="display: flex; gap: 15px; align-items: center;" class="nav-links">
                 <div class="nav-wallet" id="walletDisplay" onclick="updateCredits()" title="Points Balance">
@@ -958,11 +998,20 @@
                 <div class="pulse-dot"></div>
                 <span>Joined by <span class="odometer" id="totalDownloads">1,540</span>+ users downloading today</span>
             </div>
-            <p class='animate delay-2'>Download Instagram Videos, Reels, and Stories in high quality with InstaStream AI. The fastest, safest, and most intelligent tool for saving Instagram content. Free forever, no watermark.</p>
+            <p class='animate delay-2'>Download Instagram Reels, YouTube Videos, and Shorts in high quality with InstaStream Pro. The fastest, safest, and most intelligent tool for saving social media content. Free forever, no watermark.</p>
 
-            <div class='limit-badge animate delay-2' id='limitBadge'>
+            <div class='limit-badge animate delay-2' id='limitBadge' style="margin-bottom: 30px;">
                 <i class="fas fa-chart-line"></i>
                 <span id='limitText'>Downloads Left: 10 / 10</span>
+            </div>
+
+            <div class="downloader-tabs animate delay-2">
+                <div class="tab-item active" id="tab-insta" onclick="switchPlatform('instagram')">
+                    <i class="fab fa-instagram"></i> Instagram
+                </div>
+                <div class="tab-item tab-yt" id="tab-yt" onclick="switchPlatform('youtube')">
+                    <i class="fab fa-youtube"></i> YouTube
+                </div>
             </div>
 
             <div class='search-card animate' style='animation-delay: 0.6s;'>
@@ -1037,22 +1086,22 @@
 
             <!-- How to Download Section -->
             <section id="how-to" style="padding: 40px 10%; background: #fff; border-radius: 40px 40px 0 0; margin-top: 40px;">
-                <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 30px; text-align: center;">How to Download from Instagram?</h2>
+                <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 30px; text-align: center;">How to Download Videos?</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px;">
                     <div class="f-card">
                         <i class="fas fa-copy"></i>
                         <h3>1. Copy URL</h3>
-                        <p>Open Instagram app or website, find the video or photo you want, and copy its link/URL.</p>
+                        <p>Open Instagram or YouTube, find the video or Short you want, and copy its link/URL.</p>
                     </div>
                     <div class="f-card">
                         <i class="fas fa-paste"></i>
                         <h3>2. Paste Link</h3>
-                        <p>Come back to InstaStream AI and paste the link into the search box at the top of this page.</p>
+                        <p>Come back to InstaStream Pro and paste the link into the search box at the top of this page.</p>
                     </div>
                     <div class="f-card">
                         <i class="fas fa-cloud-download-alt"></i>
                         <h3>3. Download</h3>
-                        <p>Click "Convert Now" button. Our AI will fetch the high-quality file for you to save instantly.</p>
+                        <p>Click "Convert Now" button. Our Pro engine will fetch the high-quality file for you to save instantly.</p>
                     </div>
                 </div>
             </section>
@@ -1062,8 +1111,8 @@
                 <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 30px; text-align: center;">Frequently Asked Questions</h2>
                 <div style="max-width: 800px; margin: 0 auto; text-align: left;">
                     <div style="margin-bottom: 30px; background: white; padding: 25px; border-radius: 20px; box-shadow: var(--shadow);">
-                        <h4 style="color: var(--primary); margin-bottom: 10px;">Is InstaStream AI free to use?</h4>
-                        <p style="color: #64748b;">Yes, InstaStream AI is 100% free. You can download as many Instagram videos and reels as you want without any hidden charges.</p>
+                        <h4 style="color: var(--primary); margin-bottom: 10px;">Is InstaStream Pro free to use?</h4>
+                        <p style="color: #64748b;">Yes, InstaStream Pro is 100% free. You can download as many Instagram reels and YouTube shorts as you want without any hidden charges.</p>
                     </div>
                     <div style="margin-bottom: 30px; background: white; padding: 25px; border-radius: 20px; box-shadow: var(--shadow);">
                         <h4 style="color: var(--primary); margin-bottom: 10px;">Does it work on Android and iPhone?</h4>
@@ -1075,7 +1124,7 @@
                     </div>
                     <div style="margin-bottom: 30px; background: white; padding: 25px; border-radius: 20px; box-shadow: var(--shadow);">
                         <h4 style="color: var(--primary); margin-bottom: 10px;">Do I need to login to download?</h4>
-                        <p style="color: #64748b;">No, you do not need to log in or share your account details. InstaStream AI is completely anonymous and secure.</p>
+                        <p style="color: #64748b;">No, you do not need to log in or share your account details. InstaStream Pro is completely anonymous and secure.</p>
                     </div>
                     <div style="margin-bottom: 30px; background: white; padding: 25px; border-radius: 20px; box-shadow: var(--shadow);">
                         <h4 style="color: var(--primary); margin-bottom: 10px;">Is it legal and safe to use?</h4>
@@ -1311,6 +1360,25 @@
         <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
         <script>
+            // --- UI Platform Switcher ---
+            function switchPlatform(platform) {
+                document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+                if (platform === 'youtube') {
+                    document.getElementById('tab-yt').classList.add('active');
+                    document.getElementById('urlInput').placeholder = 'Paste YouTube URL here...';
+                    document.getElementById('typing-text').textContent = 'YouTube Downloader';
+                } else {
+                    document.getElementById('tab-insta').classList.add('active');
+                    document.getElementById('urlInput').placeholder = 'Paste Instagram URL here...';
+                    document.getElementById('typing-text').textContent = 'Instagram Downloader';
+                }
+                
+                // Add a small bounce effect to input
+                const input = document.getElementById('urlInput');
+                input.style.transform = 'scale(0.98)';
+                setTimeout(() => input.style.transform = 'scale(1)', 100);
+            }
+
             // --- Firebase Config (User needs to fill) ---
             const firebaseConfig = {
                 apiKey: "YOUR_API_KEY",
@@ -1465,7 +1533,8 @@
                 statusText.innerText = 'Connecting to server...';
                 
                 // --- Show Placeholders Immediately ---
-                document.getElementById('progThumb').src = 'https://static.cdninstagram.com/rsrc.php/v3/yI/r/VsNE-OHk_8a.png';
+                const isYT = document.getElementById('tab-yt').classList.contains('active');
+                document.getElementById('progThumb').src = isYT ? 'https://upload.wikimedia.org/wikipedia/commons/e/ef/Youtube_logo.png' : 'https://static.cdninstagram.com/rsrc.php/v3/yI/r/VsNE-OHk_8a.png';
                 document.getElementById('progTitle').innerText = 'Detecting Video Details...';
                 progressUI.style.display = 'flex';
                 
