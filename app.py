@@ -9,7 +9,8 @@ import json
 import firebase_admin
 from firebase_admin import credentials, auth
 import urllib.parse
-from huggingface_hub import CommitScheduler
+from huggingface_hub import CommitScheduler, hf_hub_download
+import shutil
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
@@ -92,6 +93,21 @@ dataset_id = os.environ.get('DATASET_ID', 'Argha-7/insta-downloader-logs')
 
 if hf_token:
     try:
+        # Pull latest data from Hub before starting scheduler
+        for filename in ['activity.json', 'stats.json', 'jobs.json']:
+            try:
+                # We expect files to be in the 'logs/' prefix in the repo based on path_in_repo="logs"
+                downloaded_path = hf_hub_download(
+                    repo_id=dataset_id,
+                    filename=f"logs/{filename}",
+                    repo_type="dataset",
+                    token=hf_token
+                )
+                shutil.copy(downloaded_path, DATA_DIR / filename)
+                print(f"Successfully pulled {filename} from HF Hub.")
+            except Exception as e:
+                print(f"Note: Could not pull {filename} from HF Hub (might be a new setup): {e}")
+
         scheduler = CommitScheduler(
             repo_id=dataset_id,
             repo_type="dataset",
