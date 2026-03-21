@@ -581,7 +581,13 @@ def download_video(url, platform='instagram', existing_job_id=None, workflow_to_
     }
     
     if platform == 'youtube':
-        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['tv', 'mweb'], 'skip': ['web']}}
+        ydl_opts['extractor_args'] = {
+            'youtube': {
+                'player_client': ['android', 'ios', 'mweb'], 
+                'skip': ['web', 'web_creator']
+            }
+        }
+        ydl_opts['user_agent'] = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36'
         if os.path.exists(COOKIES_FILE): ydl_opts['cookiefile'] = str(COOKIES_FILE)
         # Inject PO Token if available
         if os.path.exists(POT_FILE):

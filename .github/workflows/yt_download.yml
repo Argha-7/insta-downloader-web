@@ -60,30 +60,30 @@ jobs:
         run: |
           sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
-          # Symlink node to nodejs just in case yt-dlp is looking for that name
-          NODE_EXE=$(which node)
-          sudo ln -s "$NODE_EXE" /usr/local/bin/nodejs || true
+          
+          # Force Node.js visibility
+          sudo ln -sf $(which node) /usr/bin/node || true
+          sudo ln -sf $(which node) /usr/bin/nodejs || true
+          
           echo "yt-dlp version:"
           yt-dlp --version
+          echo "Node.js path $(which node)"
 
       - name: Download YouTube Video
         id: dl
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: |
           mkdir -p output
           echo "Starting download (Cookies: ${{ steps.setup_env.outputs.HAS_COOKIES }}, POT: ${{ steps.setup_env.outputs.HAS_POT }})"
           
-          # Force Node.js directory into PATH for the subprocess
-          export PATH="$(dirname $(which node)):$PATH"
-          echo "PATH for yt-dlp: $PATH"
+          # Set PATH to include node directory explicitly
+          export PATH="/usr/local/bin:/usr/bin:/bin:$(dirname $(which node)):$PATH"
           
-          # Use ABSOLUTE PATH to standalone yt-dlp with POT support
+          # Use android/ios priority which has fewer JS challenges
           /usr/local/bin/yt-dlp -v "${{ github.event.inputs.video_url }}" \
             $COOKIES_ARG \
             $POT_ARG \
-            --extractor-args "youtube:player-client=tv,mweb,android,ios;player-skip=web,web_creator" \
-            --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
+            --extractor-args "youtube:player-client=android,ios,mweb;player-skip=web" \
+            --user-agent "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36" \
             --force-ipv4 \
             -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
             -o "output/video.%(ext)s" \
