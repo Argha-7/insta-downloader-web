@@ -38,12 +38,19 @@ jobs:
           node -v
           pip --version
 
+      - name: Setup Cookies
+        if: ${{ secrets.YT_COOKIES != '' }}
+        run: |
+          echo "${{ secrets.YT_COOKIES }}" > youtube_cookies.txt
+          echo "COOKIES_ARG=--cookies youtube_cookies.txt" >> $GITHUB_ENV
+
       - name: Download YouTube Video
         id: dl
         run: |
           mkdir -p output
-          # Try multiple clients, force IPv4, and use JS runtime for signatures
+          # Try with cookies if available, otherwise use advanced bypasses
           python -m yt_dlp -v "${{ github.event.inputs.video_url }}" \
+            ${{ env.COOKIES_ARG }} \
             --extractor-args "youtube:player-client=web_creator,android,ios,mweb;player-skip=web" \
             --force-ipv4 \
             -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
@@ -61,8 +68,9 @@ jobs:
       - name: Send to Callback
         if: ${{ github.event.inputs.callback_url != '' }}
         run: |
-          # Use same bypass logic for generating direct URL
+          # Use same bypass logic (including cookies) for generating direct URL
           DIRECT_URL=$(python -m yt_dlp "${{ github.event.inputs.video_url }}" -g \
+            ${{ env.COOKIES_ARG }} \
             --extractor-args "youtube:player-client=web_creator,android,ios,mweb;player-skip=web" \
             --force-ipv4 --no-playlist || echo "")
           

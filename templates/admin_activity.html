@@ -615,6 +615,52 @@
                 status.style.color = '#ef4444';
             }
         }
+        // --- Cookie Management ---
+        async function checkCookieStatus() {
+            const status = document.getElementById('cookieStatus');
+            try {
+                const res = await fetch('/api/cookie-status', {
+                    headers: { 'X-App-Secret': 'insta_pro_ai_secure_99' }
+                });
+                const data = await res.json();
+                if (data.active) {
+                    status.innerHTML = `✅ <span style="color:#10b981">Active</span> (${(data.size/1024).toFixed(1)} KB) - Last updated: ${data.last_modified}`;
+                } else {
+                    status.innerHTML = `❌ <span style="color:#ef4444">Missing / Inactive</span>`;
+                }
+            } catch (e) { console.error("Cookie check failed"); }
+        }
+
+        async function uploadCookies() {
+            const fileInput = document.getElementById('cookieFile');
+            const status = document.getElementById('cookieStatus');
+            if (!fileInput.files.length) {
+                alert("Please select a file first!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            status.innerText = "⏳ Uploading...";
+            try {
+                const res = await fetch('/api/upload-cookies', {
+                    method: 'POST',
+                    headers: { 'X-App-Secret': 'insta_pro_ai_secure_99' },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Cookies updated successfully!");
+                    checkCookieStatus();
+                } else {
+                    alert("Upload failed: " + data.message);
+                }
+            } catch (e) { alert("Error: " + e.message); }
+        }
+
+        // Initial checks
+        checkCookieStatus();
     </script>
 </body>
 </html>

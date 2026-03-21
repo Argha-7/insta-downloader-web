@@ -1,68 +1,35 @@
-# Instagram Downloader Maintenance Guide
+# 🍪 YouTube Download Maintenance Guide
 
-This document provides technical details for maintaining and troubleshooting the Instagram downloader system.
+YouTube frequently blocks servers (like GitHub and Hugging Face) by asking them to "Sign in". To bypass this, we use **Browser Cookies**. This guide will show you how to keep your downloader running smoothly.
 
----
-
-## 🏗️ System Architecture
-
-The system consists of three main components:
-
-1.  **Frontend (Blogger Theme)**: `blogger_theme.xml` handles the UI and initial requests.
-2.  **API Layer (Hugging Face Space)**: `app.py` runs a Flask server that performs "Fast Previews" and local downloads.
-    - **Hugging Face Hub Persistence**: Data is synced to HF Datasets every 5 minutes.
-    - **Admin Dashboard**: Real-time stats and robust country/activity charts.
-    - **Resilient extraction**: Improved headers and `yt-dlp` settings.
-3.  **Failover Layer (GitHub Actions)**: `.github/workflows/download.yml` runs a worker if the HF Space is blocked by Instagram.
+## 1. How to get your YouTube Cookies
+1. Install the **"Get cookies.txt LOCALLY"** extension in your Chrome/Edge browser.
+2. Open [YouTube.com](https://www.youtube.com) and make sure you are logged in (or just visit the site).
+3. Click the extension icon and click **"Export"** (choose Netscape format).
+4. You will get a file named `youtube.com_cookies.txt`.
 
 ---
 
-## 🌟 Key Features
-
-### 1. Fast Preview
-Uses `yt-dlp` on the Hugging Face Space to fetch video metadata and a streamable preview URL. This provides instant feedback to users.
-
-### 2. Job-Based Downloads
-Large files are handled via a job system.
-- If the Space can download the file, it does so and returns it.
-- If the Space is blocked, it triggers a **GitHub Action** to download the file and send it to the user.
-
-### 3. Data Persistence (HF Hub)
-We use the `huggingface_hub` `CommitScheduler` to save `activity.json`, `stats.json`, and `jobs.json` to a private Hugging Face Dataset. This ensures data survives Space restarts.
+## 2. Fixing "Failover" (GitHub Actions)
+If the high-speed download fails on the website, it goes to GitHub. To fix this:
+1. Go to your GitHub Repository: `Argha-7/insta-downloader-web`.
+2. Go to **Settings** > **Secrets and variables** > **Actions**.
+3. Click **New repository secret**.
+4. Name: `YT_COOKIES`.
+5. Value: Open your `youtube.com_cookies.txt` file, copy EVERYTHING inside, and paste it here.
+6. Click **Add secret**.
 
 ---
 
-## 🛠️ Critical Configurations
-
-### `yt-dlp` Settings
-We use several flags to avoid IP blocks:
-- `--no-check-certificate`: Ignores SSL errors.
-- `--geo-bypass`: Bypasses regional restrictions.
-- `User-Agent`: Mimics a modern Chrome browser on Windows 11.
-
-### Environment Variables
-- `HF_TOKEN`: Required for data persistence (Write access).
-- `DATASET_ID`: HF Dataset ID (e.g., `Argha-7/insta-stats`).
-- `GH_TOKEN`: Required for triggering GitHub Actions failover.
+## 3. Fixing "Direct Download" (Admin Panel)
+To make the website's internal downloader work:
+1. Go to your **Admin Dashboard** (`/admin/activity`).
+2. Look for the **"YouTube Cookies"** section.
+3. Click **Upload Cookies** and select your `youtube.com_cookies.txt` file.
+4. Click **Update**.
 
 ---
 
-## 🔍 Troubleshooting
-
-### If Download Fails (Local Error)
-Check the `yt-dlp` options in `app.py`. Ensure the `referer` and `User-Agent` headers are up to date.
-
-### If Persistent Data Resets
-Verify that `HF_TOKEN` and `DATASET_ID` are correctly set in the Space secrets. Check the Space logs for `HF HUB SYNC ERROR`.
-
-### If GitHub Action Fails
-Ensure the secret `GH_TOKEN` is valid and has `repo` and `workflow` permissions. Check if the `.github/workflows/download.yml` has any syntax errors.
-
----
-
-## 📝 Recent Fixes (v32+)
-
-- **Firebase Migration [REVERTED]**: Switched to HF Hub for a self-contained solution.
-- **Admin Dashboard Refactor**: Switched to `DOMContentLoaded` and data attributes for better reliability.
-- **GHA Typo**: Fixed `--nocheckcertificate` to `--no-check-certificate`.
-- **Ultra-Robust Charts**: Added type checks and error boundaries to the dashboard JS.
+## 🛠️ Troubleshooting
+*   **"Sign in" error persists?** Your cookies might have expired. Simply export a new file and update both GitHub and the Admin Panel.
+*   **Is it safe?** Yes, the cookies are stored securely on your private server/GitHub secrets. However, never share this file with anyone else.

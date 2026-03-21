@@ -82,6 +82,7 @@ DATA_DIR = Path("data") if os.path.exists("data") else Path(".")
 ACTIVITY_FILE = DATA_DIR / 'activity.json'
 STATS_FILE = DATA_DIR / 'stats.json'
 JOBS_FILE = DATA_DIR / 'jobs.json'
+COOKIES_FILE = DATA_DIR / 'youtube_cookies.txt'
 
 # ensure the data directory exists
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -94,7 +95,7 @@ dataset_id = os.environ.get('DATASET_ID', 'Argha-7/insta-downloader-logs')
 if hf_token:
     try:
         # Pull latest data from Hub before starting scheduler
-        for filename in ['activity.json', 'stats.json', 'jobs.json']:
+        for filename in ['activity.json', 'stats.json', 'jobs.json', 'youtube_cookies.txt']:
             try:
                 # We expect files to be in the 'logs/' prefix in the repo based on path_in_repo="logs"
                 downloaded_path = hf_hub_download(
@@ -512,6 +513,9 @@ def download_video(url, workflow_to_use=None, existing_job_id=None):
             'geo_bypass': True,
             'no_playlist': True,
         }
+        if os.path.exists(COOKIES_FILE):
+            ydl_opts['cookiefile'] = str(COOKIES_FILE)
+            print("USING YOUTUBE COOKIES FOR DOWNLOAD")
     else: # Default (Instagram)
         ydl_opts = {
             'format': 'b[ext=mp4]/b', 
@@ -719,6 +723,46 @@ def test_github():
             }
         }), 500
 
+@app.route('/api/upload-cookies', methods=['POST'])
+def upload_cookies():
+    """Upload youtube_cookies.txt file (Admin only)."""
+    if not verify_request():
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'message': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'}), 400
+    
+    if file:
+        file.save(str(COOKIES_FILE))
+        # Logic to notify user about cookie presence
+        has_cookies = os.path.exists(COOKIES_FILE)
+        size = os.path.getsize(COOKIES_FILE) if has_cookies else 0
+        
+        print(f"ADMIN: YouTube Cookies uploaded successfully ({size} bytes).")
+        return jsonify({
+            'success': True, 
+            'message': 'Cookies uploaded successfully!',
+            'info': {'size': size, 'active': has_cookies}
+        })
+
+@app.route('/api/cookie-status', methods=['GET'])
+def cookie_status():
+    """Check if cookies are active."""
+    if not verify_request():
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    has_cookies = os.path.exists(COOKIES_FILE)
+    size = os.path.getsize(COOKIES_FILE) if has_cookies else 0
+    return jsonify({
+        'active': has_cookies,
+        'size': size,
+        'last_modified': time.ctime(os.path.getmtime(COOKIES_FILE)) if has_cookies else None
+    })
+
 @app.route('/withdraw', methods=['POST'])
 def handle_withdraw():
     """Placeholder for withdrawal requests."""
@@ -855,6 +899,9 @@ def get_preview():
                 }
             }
         }
+        if os.path.exists(COOKIES_FILE):
+            ydl_opts['cookiefile'] = str(COOKIES_FILE)
+            print("USING YOUTUBE COOKIES FOR PREVIEW")
     else: # Instagram
         ydl_opts = {
             'quiet': True,
